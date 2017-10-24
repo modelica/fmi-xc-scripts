@@ -1,0 +1,14 @@
+{
+  "name": "@modelica/maxc-scripts",
+  "version": "0.0.1",
+  "description": "Scripts for MAXC project",
+  "main": "extract_exports.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Michael M. Tiller",
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "findit": "^2.0.0"
+  }
+}

@@ -1,15 +1,12 @@
 var find = require('findit');
 var path = require('path');
 
+import { ToolDetails } from './schemas';
+
 export const SVN = "/Users/mtiller/Source/ModelicaAssociation/public";
 export const FMUs = path.join(SVN, "Test_FMUs");
 
 export type Predicate<T> = (x: T) => boolean;
-
-export interface ToolDetails {
-    tool: string;
-    version: string;
-}
 
 export interface ExportDetails {
     dir: string;

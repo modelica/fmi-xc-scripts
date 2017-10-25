@@ -18,7 +18,7 @@ export interface ExportDetails {
     model: string;
 }
 
-function parseExport(root: string, dir: string, rel: string, parts: string[]): ExportDetails {
+function parseExport(dir: string, rel: string, parts: string[]): ExportDetails {
     return {
         dir: dir,
         rel: rel,
@@ -34,7 +34,7 @@ function parseExport(root: string, dir: string, rel: string, parts: string[]): E
 }
 
 export function getExports(root: string, pred?: Predicate<ExportDetails>): Promise<ExportDetails[]> {
-    let predicate: Predicate<ExportDetails> = pred || ((x: ExportDetails) => true);
+    let predicate: Predicate<ExportDetails> = pred || (() => true);
     return new Promise((resolve, reject) => {
         let finder = find(root, {});
         let ret: ExportDetails[] = [];
@@ -43,7 +43,7 @@ export function getExports(root: string, pred?: Predicate<ExportDetails>): Promi
             let rel = path.relative(root, dir);
             let parts = rel.split("/");
             if (parts.length == 6) {
-                let details = parseExport(root, dir, rel, parts);
+                let details = parseExport(dir, rel, parts);
                 if (predicate(details)) {
                     ret.push(details);
                 }

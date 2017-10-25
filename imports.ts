@@ -9,7 +9,7 @@ export interface ImportDetails extends ExportDetails {
     importer: ToolDetails;
 }
 
-function parseImport(root: string, dir: string, rel: string, parts: string[]): ImportDetails {
+function parseImport(dir: string, rel: string, parts: string[]): ImportDetails {
     return {
         dir: dir,
         rel: rel,
@@ -29,7 +29,7 @@ function parseImport(root: string, dir: string, rel: string, parts: string[]): I
 }
 
 export function getImports(root: string, pred?: Predicate<ImportDetails>): Promise<ImportDetails[]> {
-    let predicate: Predicate<ImportDetails> = pred || ((x: ImportDetails) => true);
+    let predicate: Predicate<ImportDetails> = pred || (() => true);
     return new Promise((resolve, reject) => {
         let finder = find(root, {});
         let ret: ImportDetails[] = [];
@@ -39,7 +39,7 @@ export function getImports(root: string, pred?: Predicate<ImportDetails>): Promi
             let parts = rel.split("/");
 
             if (parts.length == 8) {
-                let details = parseImport(root, dir, rel, parts);
+                let details = parseImport(dir, rel, parts);
                 if (predicate(details)) {
                     ret.push(details);
                 }

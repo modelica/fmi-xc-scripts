@@ -1,7 +1,7 @@
 var find = require('findit');
 var ini = require('ini');
 
-import { ToolSummary, VariantSupport, Status, parseVersion, parseVariant, parsePlatform } from './schemas';
+import { ToolSummary, VariantSupport, Status, parseVersion, parseVariant, parsePlatform, CrossCheckResult, CrossCheckTable } from './schemas';
 import { ExportDetails } from './exports';
 import { ImportDetails } from './imports';
 
@@ -182,4 +182,45 @@ export function validateImport(local: string[], tools: string[]) {
             reporter(`No ReadMe.txt or ReadMe.pdf found in ${x.dir}`);
         }
     }
+}
+
+export function buildTable(imports: ImportDetails[], reporter: Reporter): CrossCheckTable {
+    let ret: CrossCheckTable = [];
+    imports.forEach((imp) => {
+        let existing = ret.findIndex((summary) => summary.importer.tool == imp.importer.tool &&
+            summary.importer.version == imp.importer.version && summary.exporter.tool == imp.exporter.tool &&
+            summary.exporter.version == imp.exporter.version);
+
+        let results = existing >= 0 ? ret[existing].results : {};
+
+        results[imp.model] = status(imp.dir, reporter);
+
+        if (existing == -1) {
+            let version = parseVersion(imp.fmi); // TODO: change to ex.version
+            let variant = parseVariant(imp.variant);
+            let platform = parsePlatform(imp.platform);
+            if (version == null || variant == null || platform == null) {
+                throw new Error("Unacceptable value found in previously validated data, this should not happen");
+            }
+            ret.push({
+                version: version,
+                variant: variant,
+                platform: platform,
+                importer: imp.importer,
+                exporter: imp.exporter,
+                results: results,
+            })
+        } else {
+            ret[existing].results = results;
+        }
+    })
+    return ret;
+}
+
+function status(dir: string, reporter: Reporter): CrossCheckResult {
+    if (fs.existsSync(path.join(dir, "passed"))) return CrossCheckResult.Passed;
+    if (fs.existsSync(path.join(dir, "failed"))) return CrossCheckResult.Failed;
+    if (fs.existsSync(path.join(dir, "rejected"))) return CrossCheckResult.Rejected;
+    reporter(`No result file name 'passed', 'failed' or 'rejected' found in ${dir}`);
+    return CrossCheckResult.Failed;
 }

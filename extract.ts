@@ -1,14 +1,15 @@
-import { infoFiles, parseInfo, partition, validate, validateExport, validateImport, Reporter } from './utils';
+import { infoFiles, parseInfo, validate, validateExport, validateImport, buildTable } from './utils';
 import { loadTools, pushTools, pushFMUs, pushCrossChecks } from './db';
-import { ToolSummary, FMUTable, parsePlatform, parseVariant, parseVersion, CrossCheckTable, CrossCheckResult } from './schemas';
+import { ToolSummary, FMUTable, parsePlatform, parseVariant, parseVersion, CrossCheckTable } from './schemas';
 import { getExports } from './exports';
-import { getImports, ImportDetails } from './imports';
+import { getImports } from './imports';
 import * as debug from 'debug';
 import * as yargs from 'yargs';
 import * as path from 'path';
-import * as fs from 'fs';
 
 let argv = yargs
+    .string('artifacts')
+    .default('artifacts', 'artifacts')
     .string('dir')
     .default('dir', null)
     .string('repo')
@@ -42,6 +43,8 @@ export function reporter() {
         console.warn("WARNING: " + msg);
     }
 }
+
+let artifactsDir = path.join(argv.dir, argv.artifacts);
 
 export async function run() {
     // Keeping a list of any issues we found (non-fatal stuff that we skipped or ignored)
@@ -99,9 +102,9 @@ export async function run() {
     })
 
     // Write out: tools.json (ToolsTable)
-    await pushTools(toolMap);
+    await pushTools(toolMap, artifactsDir);
     // Write out: fmus.json (FMUTable)
-    await pushFMUs(fmus);
+    await pushFMUs(fmus, artifactsDir);
 
     if (argv.imports) {
         stepsDebug("Processing cross-check data");
@@ -112,49 +115,9 @@ export async function run() {
         let xc: CrossCheckTable = buildTable(imports, report);
 
         // Write out: xc_results.json (CrossCheckTable)
-        await pushCrossChecks(xc);
+        await pushCrossChecks(xc, artifactsDir);
     } else {
         stepsDebug("Skipping import data");
     }
 }
 
-export function buildTable(imports: ImportDetails[], reporter: Reporter): CrossCheckTable {
-    let ret: CrossCheckTable = [];
-    imports.forEach((imp) => {
-        let existing = ret.findIndex((summary) => summary.importer.tool == imp.importer.tool &&
-            summary.importer.version == imp.importer.version && summary.exporter.tool == imp.exporter.tool &&
-            summary.exporter.version == imp.exporter.version);
-
-        let results = existing >= 0 ? ret[existing].results : {};
-
-        results[imp.model] = status(imp.dir, reporter);
-
-        if (existing == -1) {
-            let version = parseVersion(imp.fmi); // TODO: change to ex.version
-            let variant = parseVariant(imp.variant);
-            let platform = parsePlatform(imp.platform);
-            if (version == null || variant == null || platform == null) {
-                throw new Error("Unacceptable value found in previously validated data, this should not happen");
-            }
-            ret.push({
-                version: version,
-                variant: variant,
-                platform: platform,
-                importer: imp.importer,
-                exporter: imp.exporter,
-                results: results,
-            })
-        } else {
-            ret[existing].results = results;
-        }
-    })
-    return ret;
-}
-
-function status(dir: string, reporter: Reporter): CrossCheckResult {
-    if (fs.existsSync(path.join(dir, "passed"))) return CrossCheckResult.Passed;
-    if (fs.existsSync(path.join(dir, "failed"))) return CrossCheckResult.Failed;
-    if (fs.existsSync(path.join(dir, "rejected"))) return CrossCheckResult.Rejected;
-    reporter(`No result file name 'passed', 'failed' or 'rejected' found in ${dir}`);
-    return CrossCheckResult.Failed;
-}

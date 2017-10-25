@@ -1,0 +1,53 @@
+[
+    {
+        "toolName": "Silver",
+        "homepage": "http://www.qtronic.com/en/silver.html",
+        "email": "fmu@qtronic.de",
+        "note": "Generation of virtual ECUs and virtual integration platform for Software in the Loop from <a href=\"http://www.qtronic.de/\">QTronic</a>.",
+        "fmi1": {
+            "import": {
+                "status": "available",
+                "num": 0,
+                "platforms": {}
+            },
+            "export": {
+                "status": "available",
+                "num": 0,
+                "platforms": {}
+            },
+            "slave": {
+                "status": "available",
+                "num": 0,
+                "platforms": {}
+            },
+            "master": {
+                "status": "available",
+                "num": 0,
+                "platforms": {}
+            }
+        },
+        "fmi2": {
+            "import": {
+                "status": "available",
+                "num": 0,
+                "platforms": {}
+            },
+            "export": {
+                "status": "unsupported",
+                "num": 0,
+                "platforms": {}
+            },
+            "slave": {
+                "status": "available",
+                "num": 0,
+                "platforms": {}
+            },
+            "master": {
+                "status": "available",
+                "num": 0,
+                "platforms": {}
+            }
+        },
+        "repo": "git@github.com:modelica/fmixc-qtronic.git"
+    }
+]

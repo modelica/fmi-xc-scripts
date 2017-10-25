@@ -1,9 +1,14 @@
 var find = require('findit');
 var ini = require('ini');
 
-import { ToolSummary, VariantSupport, Status } from './schemas';
+import { ToolSummary, VariantSupport, Status, parseVersion, parseVariant, parsePlatform } from './schemas';
+import { ExportDetails } from './exports';
+import { ImportDetails } from './imports';
 
 import * as fs from 'fs';
+import * as path from 'path';
+
+export type Reporter = (x: string) => void;
 
 export function infoFiles(dir: string): string[] {
     let contents = fs.readdirSync(dir);
@@ -56,11 +61,10 @@ function parseStatus(field: string, obj: { [key: string]: string }): VariantSupp
         platforms: {},
     }
 }
-export function parseInfo(filename: string): ToolSummary {
+
+export function parseInfo(filename: string, repo: string): ToolSummary {
     let contents = fs.readFileSync(filename, 'utf-8');
-    console.log("contents = ", contents);
     let obj = ini.parse(contents);
-    console.log(obj);
 
     if (!obj.hasOwnProperty("Tool")) throw new Error("No 'Tool' section found in " + filename);
     obj = obj["Tool"];
@@ -85,6 +89,97 @@ export function parseInfo(filename: string): ToolSummary {
             export: parseStatus("export_me_20", obj),
             slave: parseStatus("slave_cs_20", obj),
             master: parseStatus("master_cs_20", obj),
+        },
+        repo: repo,
+    }
+}
+
+export function partition<T>(array: Array<T>, predicate: (x: T) => boolean): { in: Array<T>, out: Array<T> } {
+    let ret: { in: Array<T>, out: Array<T> } = {
+        in: [],
+        out: [],
+    }
+    array.forEach((elem) => {
+        if (predicate(elem)) ret.in.push(elem);
+        else ret.out.push(elem);
+    })
+    return ret;
+}
+
+/**
+ * This function validates an array of elements returning the set of valid elements.  The
+ * validate function should return a message describing why an element is invalid if it finds
+ * a problem, otherwise it should return null.  Any issues found will be concatenated to
+ * the issues argument.
+ * 
+ * @export
+ * @template T 
+ * @param {Array<T>} array 
+ * @param {((x: T) => string | null)} validate 
+ * @param {string[]} issues 
+ * @returns {Array<T>} 
+ */
+export function validate<T>(array: Array<T>, validate: (x: T, report: Reporter) => void, report: Reporter): Array<T> {
+    let ret: Array<T> = [];
+    let count = 0;
+    array.forEach((elem) => {
+        let reporter = (x: string) => {
+            count++;
+            report(x);
+        }
+        validate(elem, reporter);
+        if (count == 0) ret.push(elem);
+    })
+    return ret;
+}
+
+// TODO: Write with report callback
+export function validateExport(local: string[]) {
+    return (x: ExportDetails, reporter: Reporter): void => {
+        let idx = local.indexOf(x.exporter.tool);
+        if (idx == -1) {
+            let names = local.join(", ");
+            reporter(`Tool '${x.exporter.tool}' is not among list of tools defined in this repo: ${names}`);
+        }
+        if (parseVersion(x.fmi) == null) reporter(`Unknown FMI version '${x.fmi}'`);
+        if (parseVariant(x.variant) == null) reporter(`Unknown FMI variant '${x.variant}'`);
+        if (parsePlatform(x.platform) == null) reporter(`Unknown FMI platform '${x.platform}'`);
+        let requiredFiles = [
+            '.fmu', '_ref.csv', '_in.csv', '_cc.log', '_cc.csv', '_ref.opt',
+        ];
+        // TODO: Check for Readme?
+        // TODO: Check for batch
+        for (let suffix of requiredFiles) {
+            let fileName = `${x.model}${suffix}`
+            if (!fs.existsSync(path.join(x.dir, fileName))) reporter(`Expected to find a file named ${fileName} in ${x.dir}`);
+        }
+        if (!fs.existsSync(path.join(x.dir, "ReadMe.txt")) && !fs.existsSync(path.join(x.dir, "ReadMe.pdf"))) {
+            reporter(`No ReadMe.txt or ReadMe.pdf found in ${x.dir}`);
+        }
+        if (!fs.existsSync(path.join(x.dir, `${x.model}_cc.bat`)) && !fs.existsSync(path.join(x.dir, `${x.model}_cc.sh`))) {
+            reporter(`No shell script (.bat or .sh) found in ${x.dir}`);
+        }
+    }
+}
+
+export function validateImport(local: string[], tools: string[]) {
+    return (x: ImportDetails, reporter: Reporter): void => {
+        let idx = local.indexOf(x.importer.tool);
+        if (idx == -1) {
+            let names = local.join(", ");
+            reporter(`Import tool '${x.importer.tool}' is not among list of tools defined in this repo: ${names}`);
+        }
+        idx = tools.indexOf(x.exporter.tool);
+        if (idx == -1) {
+            reporter(`Export tool '${x.exporter.tool}' is not among the list of known FMI tools`);
+        }
+        if (parseVersion(x.fmi) == null) reporter(`Unknown FMI version '${x.fmi}'`);
+        if (parseVariant(x.variant) == null) reporter(`Unknown FMI variant '${x.variant}'`);
+        if (parsePlatform(x.platform) == null) reporter(`Unknown FMI platform '${x.platform}'`);
+        let csvName = x.model + "_out.csv";
+        if (!fs.existsSync(path.join(x.dir, csvName))) reporter(`No CSV file named ${csvName} found in ${x.dir}`);
+        if (!fs.existsSync(path.join(x.dir, "ReadMe.txt")) && !fs.existsSync(path.join(x.dir, "ReadMe.pdf"))) {
+            reporter(`No ReadMe.txt or ReadMe.pdf found in ${x.dir}`);
         }
     }
 }

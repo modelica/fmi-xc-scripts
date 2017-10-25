@@ -32,7 +32,8 @@ export interface ToolSummary {
         "import": VariantSupport,
         "slave": VariantSupport,
         "master": VariantSupport,
-    }
+    },
+    repo: string; // Home repository for this data
 }
 
 export type ToolsTable = ToolSummary[];

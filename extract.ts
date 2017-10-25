@@ -77,8 +77,10 @@ export async function run() {
 
     // Process exports
     //   Find all directories of appropriate length
-    let exports = validate(await getExports(path.join(argv.dir, "Test_FMUs")), validateExport(local), report);
-    dataDebug("Export directories: %o", exports);
+    let allExports = await getExports(path.join(argv.dir, "Test_FMUs"));
+    dataDebug("All export directories: %o", allExports);
+    let exports = validate(allExports, validateExport(local), report);
+    dataDebug("Validated export directories: %o", exports);
     //   Build FMUTable
     let fmus: FMUTable = exports.map((ex) => {
         let version = parseVersion(ex.fmi); // TODO: change to ex.version

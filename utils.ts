@@ -121,8 +121,8 @@ export function partition<T>(array: Array<T>, predicate: (x: T) => boolean): { i
  */
 export function validate<T>(array: Array<T>, validate: (x: T, report: Reporter) => void, report: Reporter): Array<T> {
     let ret: Array<T> = [];
-    let count = 0;
     array.forEach((elem) => {
+        let count = 0;
         let reporter = (x: string) => {
             count++;
             report(x);

@@ -1,7 +1,7 @@
 import * as yargs from 'yargs';
 import { SVN } from './exports';
 import { createRepo } from './repo';
-import { reporter } from './utils';
+import { reporter, ReportLevel } from './utils';
 
 let argv = yargs
     .string('tool')
@@ -10,6 +10,8 @@ let argv = yargs
     .default('repo', null)
     .string('root')
     .default('root', SVN)
+    .number('pedantic')
+    .default('pedantic', true)
     .argv;
 
 if (!argv.repo) {
@@ -17,8 +19,10 @@ if (!argv.repo) {
     process.exit(1);
 }
 
+let report = reporter(argv.pedantic ? ReportLevel.Minor : ReportLevel.Major);
+
 if (argv.tool) {
-    createRepo(argv.tool, argv.repo, argv.root, reporter()).catch((e) => {
+    createRepo(argv.tool, argv.repo, argv.root, report).catch((e) => {
         console.error(e);
     })
 } else {

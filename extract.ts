@@ -1,4 +1,4 @@
-import { infoFiles, parseInfo, validate, validateExport, validateImport, buildTable, Reporter } from './utils';
+import { infoFiles, parseInfo, validate, validateExport, validateImport, buildTable, Reporter, ReportLevel } from './utils';
 import { loadTools, pushTools, pushFMUs, pushCrossChecks } from './db';
 import { ToolSummary, FMUTable, parsePlatform, parseVariant, parseVersion, CrossCheckTable } from './schemas';
 import { getExports } from './exports';
@@ -23,9 +23,9 @@ export async function processRepo(dir: string, repo: string, artifactsDir: strin
     // Build a map that maps the tool name to it's details (checking for duplicates)
     let toolMap = new Map<string, ToolSummary>();
     existing.forEach((tool) => {
-        let exists = toolMap.get(tool.toolName);
-        if (exists) throw new Error("External tool base is corrupted, multiple tools with name " + tool.toolName);
-        toolMap.set(tool.toolName, tool);
+        let exists = toolMap.get(tool.id);
+        if (exists) throw new Error("External tool base is corrupted, multiple tools with name " + tool.id);
+        toolMap.set(tool.id, tool);
     });
     stepsDebug("Loaded information for the following tools: %j", toolMap.keys());
 
@@ -37,11 +37,11 @@ export async function processRepo(dir: string, repo: string, artifactsDir: strin
     tools.forEach((toolFile) => {
         let config = parseInfo(path.join(dir, toolFile), repo);
         dataDebug("Loaded the following tool configuration data: %o", config);
-        let exists = toolMap.get(config.toolName);
-        if (exists && exists.repo != repo) throw new Error(`This repo (at ${repo}) defines tool '${config.toolName}' which was already defined in repo ${exists.repo}`);
-        stepsDebug("Adding tool '%s' to tool map", config.toolName);
-        toolMap.set(config.toolName, config);
-        local.push(config.toolName);
+        let exists = toolMap.get(config.id);
+        if (exists && exists.repo != repo) throw new Error(`This repo (at ${repo}) defines tool '${config.id}' which was already defined in repo ${exists.repo}`);
+        stepsDebug("Adding tool '%s' to tool map", config.id);
+        toolMap.set(config.id, config);
+        local.push(config.id);
     });
 
     // Process exports
@@ -74,15 +74,16 @@ export async function processRepo(dir: string, repo: string, artifactsDir: strin
             await pushFMUs(fmus, artifactsDir);
         }
     } catch (e) {
-        report("Error while processing exports in " + dir + ": " + e.message);
+        report("Error while processing exports in " + dir + ": " + e.message, ReportLevel.Fatal);
     }
 
-    if (imports) {
+    let xcdir = path.join(dir, "CrossCheck_Results");
+    if (imports && fs.existsSync(xcdir)) {
         try {
             stepsDebug("Processing cross-check data");
             // Process cross checks
             //   Find all directories of appropriate length
-            let allImports = await getImports(path.join(dir, "CrossCheck_Results"))
+            let allImports = await getImports(xcdir)
             let imports = validate(allImports, validateImport(local, Array.from(toolMap.keys())), report);
             dataDebug("Import directories: %o", imports);
             let xc: CrossCheckTable = buildTable(imports, report);
@@ -90,10 +91,11 @@ export async function processRepo(dir: string, repo: string, artifactsDir: strin
             // Write out: xc_results.json (CrossCheckTable)
             await pushCrossChecks(xc, artifactsDir);
         } catch (e) {
-            report("Error while processing imports in " + dir + ": " + e.message);
+            report("Error while processing imports in " + dir + ": " + e.message, ReportLevel.Fatal);
         }
     } else {
-        stepsDebug("Skipping import data");
+        if (fs.existsSync(xcdir)) stepsDebug("Skipping import data");
+        else stepsDebug("No cross check check directory, skipping");
     }
 
     // Write out: tools.json (ToolsTable)

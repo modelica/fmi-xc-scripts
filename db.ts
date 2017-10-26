@@ -38,11 +38,11 @@ export async function pushTools(toolMap: Map<string, ToolSummary>, artifacts: st
     for (let key of keys) {
         let summary = toolMap.get(key);
         if (summary == null) continue;
-        let result = await col.updateOne({ _id: summary.toolName },
-            { _id: summary.toolName, ...summary }, { upsert: true });
+        let result = await col.updateOne({ _id: summary.id },
+            { _id: summary.id, ...summary }, { upsert: true });
         if (result.matchedCount + result.upsertedCount != 1) {
             console.log(result);
-            console.warn(`Number of modified documents modified for tool ${summary.toolName} was ${result.modifiedCount}`);
+            console.warn(`Number of modified documents modified for tool ${summary.id} was ${result.modifiedCount}`);
         }
     }
     await db.close();

@@ -1,7 +1,7 @@
 import * as yargs from 'yargs';
 import * as path from 'path';
 import { SVN } from './exports';
-import { infoFiles, reporter } from './utils';
+import { infoFiles, reporter, ReportLevel } from './utils';
 import { createRepo } from './repo';
 import { processRepo } from './extract';
 
@@ -10,10 +10,14 @@ const argv = yargs
     .default('repodir', null)
     .string('root')
     .default('root', SVN)
+    .boolean('create')
+    .default('create', true)
     .boolean('process')
     .default('process', true)
     .boolean('imports')
     .default('imports', true)
+    .number('pedantic')
+    .default('pedantic', true)
     .argv;
 
 if (!argv.repodir) {
@@ -22,13 +26,13 @@ if (!argv.repodir) {
 }
 
 async function run() {
-    let report = reporter();
+    let report = reporter(argv.pedantic ? ReportLevel.Minor : ReportLevel.Major);
     let files = await infoFiles(path.join(argv.root, "tools"));
     for (let file of files) {
         let tool = file.replace(".info", "");
         let rdir = path.join(argv.repodir, tool);
         console.log(`Create repo for tool ${tool} in ${rdir} pulling data from ${argv.root}`);
-        await createRepo(tool, rdir, argv.root, report);
+        if (argv.create) await createRepo(tool, rdir, argv.root, report);
         if (argv.process) {
             try {
                 console.log(`  Processing tool data in repo for tool ${tool}`);

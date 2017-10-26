@@ -11,7 +11,12 @@ import { ImportDetails } from './imports';
 import * as fs from 'fs';
 import * as path from 'path';
 
-export type Reporter = (x: string) => void;
+export enum ReportLevel {
+    Minor = 0,
+    Major = 1,
+    Fatal = 2,
+}
+export type Reporter = (x: string, level: ReportLevel) => void;
 
 export function infoFiles(dir: string): string[] {
     let contents = fs.readdirSync(dir);
@@ -86,6 +91,11 @@ export function parseInfo(filename: string, repo: string): ToolSummary {
     let contents = fs.readFileSync(filename, 'utf-8');
     let obj = ini.parse(contents);
 
+    let basename = path.basename(filename);
+    if (!basename.endsWith(".info")) throw new Error("Expected tool information to be contained in a file with the .info suffix");
+
+    let toolId = basename.slice(0, basename.length - 5);
+
     if (!obj.hasOwnProperty("Tool")) throw new Error("No 'Tool' section found in " + filename);
     obj = obj["Tool"];
 
@@ -94,7 +104,8 @@ export function parseInfo(filename: string, repo: string): ToolSummary {
     });
 
     return {
-        toolName: obj["name"],
+        id: toolId,
+        displayName: obj["name"],
         homepage: obj["href"],
         email: obj["email"],
         note: obj["note"] || "",
@@ -143,9 +154,9 @@ export function validate<T>(array: Array<T>, validate: (x: T, report: Reporter) 
     let ret: Array<T> = [];
     array.forEach((elem) => {
         let count = 0;
-        let reporter = (x: string) => {
+        let reporter = (x: string, level: ReportLevel) => {
             count++;
-            report(x);
+            report(x, level);
         }
         validate(elem, reporter);
         if (count == 0) ret.push(elem);
@@ -159,11 +170,11 @@ export function validateExport(local: string[]) {
         let idx = local.indexOf(x.exporter.tool);
         if (idx == -1) {
             let names = local.join(", ");
-            reporter(`Tool '${x.exporter.tool}' is not among list of tools defined in this repo: ${names}`);
+            reporter(`Tool '${x.exporter.tool}' is not among list of tools defined in this repo: ${names}`, ReportLevel.Major);
         }
-        if (parseVersion(x.fmi) == null) reporter(`Unknown FMI version '${x.fmi}'`);
-        if (parseVariant(x.variant) == null) reporter(`Unknown FMI variant '${x.variant}'`);
-        if (parsePlatform(x.platform) == null) reporter(`Unknown FMI platform '${x.platform}'`);
+        if (parseVersion(x.fmi) == null) reporter(`Unknown FMI version '${x.fmi}'`, ReportLevel.Major);
+        if (parseVariant(x.variant) == null) reporter(`Unknown FMI variant '${x.variant}'`, ReportLevel.Major);
+        if (parsePlatform(x.platform) == null) reporter(`Unknown FMI platform '${x.platform}'`, ReportLevel.Major);
         let requiredFiles = [
             '.fmu', '_ref.csv', '_in.csv', '_cc.log', '_cc.csv', '_ref.opt',
         ];
@@ -171,13 +182,13 @@ export function validateExport(local: string[]) {
         // TODO: Check for batch
         for (let suffix of requiredFiles) {
             let fileName = `${x.model}${suffix}`
-            if (!fs.existsSync(path.join(x.dir, fileName))) reporter(`Expected to find a file named ${fileName} in ${x.dir}`);
+            if (!fs.existsSync(path.join(x.dir, fileName))) reporter(`Expected to find a file named ${fileName} in ${x.dir}`, ReportLevel.Major);
         }
         if (!fs.existsSync(path.join(x.dir, "ReadMe.txt")) && !fs.existsSync(path.join(x.dir, "ReadMe.pdf"))) {
-            reporter(`No ReadMe.txt or ReadMe.pdf found in ${x.dir}`);
+            reporter(`No ReadMe.txt or ReadMe.pdf found in ${x.dir}`, ReportLevel.Minor);
         }
         if (!fs.existsSync(path.join(x.dir, `${x.model}_cc.bat`)) && !fs.existsSync(path.join(x.dir, `${x.model}_cc.sh`))) {
-            reporter(`No shell script (.bat or .sh) found in ${x.dir}`);
+            reporter(`No shell script (.bat or .sh) found in ${x.dir}`, ReportLevel.Minor);
         }
     }
 }
@@ -187,19 +198,22 @@ export function validateImport(local: string[], tools: string[]) {
         let idx = local.indexOf(x.importer.tool);
         if (idx == -1) {
             let names = local.join(", ");
-            reporter(`Import tool '${x.importer.tool}' is not among list of tools defined in this repo: ${names}`);
+            reporter(`Import tool '${x.importer.tool}' is not among list of tools defined in this repo: ${names}`, ReportLevel.Major);
         }
         idx = tools.indexOf(x.exporter.tool);
         if (idx == -1) {
-            reporter(`Export tool '${x.exporter.tool}' is not among the list of known FMI tools`);
+            reporter(`Export tool '${x.exporter.tool}' is not among the list of known FMI tools`, ReportLevel.Major);
         }
-        if (parseVersion(x.fmi) == null) reporter(`Unknown FMI version '${x.fmi}'`);
-        if (parseVariant(x.variant) == null) reporter(`Unknown FMI variant '${x.variant}'`);
-        if (parsePlatform(x.platform) == null) reporter(`Unknown FMI platform '${x.platform}'`);
-        let csvName = x.model + "_out.csv";
-        if (!fs.existsSync(path.join(x.dir, csvName))) reporter(`No CSV file named ${csvName} found in ${x.dir}`);
+        if (parseVersion(x.fmi) == null) reporter(`Unknown FMI version '${x.fmi}'`, ReportLevel.Major);
+        if (parseVariant(x.variant) == null) reporter(`Unknown FMI variant '${x.variant}'`, ReportLevel.Major);
+        if (parsePlatform(x.platform) == null) reporter(`Unknown FMI platform '${x.platform}'`, ReportLevel.Major);
+        let passedFile = path.join(x.dir, "passed");
+        if (fs.existsSync(passedFile)) {
+            let csvName = x.model + "_out.csv";
+            if (!fs.existsSync(path.join(x.dir, csvName))) reporter(`No CSV file named ${csvName} found in ${x.dir}`, ReportLevel.Minor);
+        }
         if (!fs.existsSync(path.join(x.dir, "ReadMe.txt")) && !fs.existsSync(path.join(x.dir, "ReadMe.pdf"))) {
-            reporter(`No ReadMe.txt or ReadMe.pdf found in ${x.dir}`);
+            reporter(`No ReadMe.txt or ReadMe.pdf found in ${x.dir}`, ReportLevel.Minor);
         }
     }
 }
@@ -260,7 +274,7 @@ function parseResult(dir: string, reporter: Reporter): CrossCheckResult {
     if (fs.existsSync(path.join(dir, "passed"))) return CrossCheckResult.Passed;
     if (fs.existsSync(path.join(dir, "failed"))) return CrossCheckResult.Failed;
     if (fs.existsSync(path.join(dir, "rejected"))) return CrossCheckResult.Rejected;
-    reporter(`No result file name 'passed', 'failed' or 'rejected' found in ${dir}`);
+    reporter(`No result file name 'passed', 'failed' or 'rejected' found in ${dir}`, ReportLevel.Minor);
     return CrossCheckResult.Failed;
 }
 
@@ -270,11 +284,13 @@ function parseResult(dir: string, reporter: Reporter): CrossCheckResult {
  * @export
  * @returns 
  */
-export function reporter() {
+export function reporter(min: ReportLevel) {
     let reported = new Set<string>();
-    return (msg: string) => {
+    return (msg: string, level: ReportLevel) => {
         if (reported.has(msg)) return;
-        reported.add(msg);
-        console.warn("WARNING: " + msg);
+        if (level >= min) {
+            reported.add(msg);
+            console.warn("WARNING: " + msg);
+        }
     }
 }

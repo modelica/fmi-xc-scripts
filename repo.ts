@@ -2,7 +2,7 @@ import * as path from 'path';
 import * as fs from 'fs-extra';
 import { getExports } from './exports';
 import { getImports } from './imports';
-import { Reporter } from './utils';
+import { Reporter, ReportLevel } from './utils';
 
 import * as debug from 'debug';
 const createDebug = debug("extract:create-repo");
@@ -38,7 +38,7 @@ export async function createRepo(tool: string, repo: string, root: string, repor
             });
         });
     } catch (e) {
-        report("Error while extracting export directories for " + tool + ": " + e.message);
+        report("Error while extracting export directories for " + tool + ": " + e.message, ReportLevel.Fatal);
     }
 
     createDebug("Collecting import directories for %s", tool);
@@ -55,7 +55,7 @@ export async function createRepo(tool: string, repo: string, root: string, repor
             });
         });
     } catch (e) {
-        report("Error while extracting import directories for " + tool + ": " + e.message);
+        report("Error while extracting import directories for " + tool + ": " + e.message, ReportLevel.Fatal);
     }
 
     // TODO: Create circle.yml

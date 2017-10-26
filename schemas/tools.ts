@@ -19,7 +19,8 @@ export interface VariantSupport {
 }
 
 export interface ToolSummary {
-    toolName: string;
+    id: string;
+    displayName: string;
     homepage: string;
     email: string;
     note: string;

@@ -1,7 +1,7 @@
 import * as yargs from 'yargs';
 import * as path from 'path';
 import { processRepo } from './extract';
-import { reporter } from './utils';
+import { reporter, ReportLevel } from './utils';
 
 let argv = yargs
     .string('artifacts')
@@ -12,6 +12,8 @@ let argv = yargs
     .default('repo', null)
     .boolean('imports')
     .default('imports', true)
+    .boolean('pedatic')
+    .default('pedantic', true)
     .argv;
 
 if (!argv.dir) {
@@ -24,10 +26,13 @@ if (!argv.repo) {
     process.exit(1);
 }
 
-console.log("argv = ", argv);
-
 let artifactsDir = path.join(argv.dir, argv.artifacts);
-let report = reporter();
+let min = ReportLevel.Minor;
+
+if (argv.pedantic) {
+    min = ReportLevel.Major;
+}
+let report = reporter(min);
 
 processRepo(argv.dir, argv.repo, artifactsDir, argv.imports, report).catch((e) => {
     console.error(e);

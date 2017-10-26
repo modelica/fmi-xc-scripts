@@ -6,15 +6,15 @@ export enum CrossCheckResult {
     Failed = "failed",
 }
 
-export type ResultsSummary = { [modelName: string]: CrossCheckResult };
-
 export interface CrossCheckSummary {
     version: FMIVersion;
     variant: FMIVariant;
     platform: FMIPlatform;
     importer: ToolDetails;
     exporter: ToolDetails;
-    results: ResultsSummary;
+    passed: string[];
+    rejected: string[];
+    failed: string[];
 }
 
 export type CrossCheckTable = CrossCheckSummary[];

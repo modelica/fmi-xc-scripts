@@ -1,7 +1,10 @@
 var find = require('findit');
 var ini = require('ini');
 
-import { ToolSummary, VariantSupport, Status, parseVersion, parseVariant, parsePlatform, CrossCheckResult, CrossCheckTable } from './schemas';
+import {
+    ToolSummary, VariantSupport, Status, parseVersion, parseVariant, parsePlatform,
+    CrossCheckSummary, CrossCheckTable, CrossCheckResult
+} from './schemas';
 import { ExportDetails } from './exports';
 import { ImportDetails } from './imports';
 
@@ -35,10 +38,20 @@ export function findFiles(dir: string, predicate: (name: string) => boolean): Pr
 
 }
 
-const requiredFields = ["name", "href", "import_me", "export_me", "slave_cs", "master_cs",
-    "import_me_20", "export_me_20", "slave_cs_20", "master_cs_20", "email"];
+const requiredFields = ["name", "href",
+    // "import_me", "export_me", "slave_cs", "master_cs",
+    // "import_me_20", "export_me_20", "slave_cs_20", "master_cs_20",
+    // "email"
+];
 
 function parseStatus(field: string, obj: { [key: string]: string }): VariantSupport {
+    if (!obj.hasOwnProperty(field)) {
+        return {
+            status: Status.Unsupported,
+            num: 0,
+            platforms: {},
+        }
+    }
     let str = obj[field];
     if (str == "A") {
         return {
@@ -54,7 +67,14 @@ function parseStatus(field: string, obj: { [key: string]: string }): VariantSupp
             platforms: {},
         }
     }
-    console.warn("Unspected status for '" + field + "': '" + str + "'");
+    if (str == "P") {
+        return {
+            status: Status.Planned,
+            num: 0,
+            platforms: {},
+        }
+    }
+    console.warn("Unexpected status for '" + field + "': '" + str + "'");
     return {
         status: Status.Unsupported,
         num: 0,
@@ -185,16 +205,18 @@ export function validateImport(local: string[], tools: string[]) {
 }
 
 export function buildTable(imports: ImportDetails[], reporter: Reporter): CrossCheckTable {
+    // Create an empty table
     let ret: CrossCheckTable = [];
+
+    // Loop over all imports
     imports.forEach((imp) => {
+        // Check to see if there is already an in the cross-check table for this particular
+        // combination of import and export tool
         let existing = ret.findIndex((summary) => summary.importer.tool == imp.importer.tool &&
             summary.importer.version == imp.importer.version && summary.exporter.tool == imp.exporter.tool &&
             summary.exporter.version == imp.exporter.version);
 
-        let results = existing >= 0 ? ret[existing].results : {};
-
-        results[imp.model] = status(imp.dir, reporter);
-
+        // If one doesn't exist, let's add it now.
         if (existing == -1) {
             let version = parseVersion(imp.fmi); // TODO: change to ex.version
             let variant = parseVariant(imp.variant);
@@ -202,25 +224,57 @@ export function buildTable(imports: ImportDetails[], reporter: Reporter): CrossC
             if (version == null || variant == null || platform == null) {
                 throw new Error("Unacceptable value found in previously validated data, this should not happen");
             }
-            ret.push({
+            let newResult: CrossCheckSummary = {
                 version: version,
                 variant: variant,
                 platform: platform,
                 importer: imp.importer,
                 exporter: imp.exporter,
-                results: results,
-            })
-        } else {
-            ret[existing].results = results;
+                passed: [],
+                failed: [],
+                rejected: [],
+            };
+            existing = ret.length;
+            ret.push(newResult);
+        }
+
+        let status = parseResult(imp.dir, reporter);
+        switch (status) {
+            case CrossCheckResult.Passed:
+                ret[existing].passed.push(imp.model);
+                break;
+            case CrossCheckResult.Rejected:
+                ret[existing].rejected.push(imp.model);
+                break;
+            case CrossCheckResult.Failed:
+                ret[existing].failed.push(imp.model);
+                break;
+            default:
+                throw new Error("Unrecognized cross check result, this should not happen");
         }
     })
     return ret;
 }
 
-function status(dir: string, reporter: Reporter): CrossCheckResult {
+function parseResult(dir: string, reporter: Reporter): CrossCheckResult {
     if (fs.existsSync(path.join(dir, "passed"))) return CrossCheckResult.Passed;
     if (fs.existsSync(path.join(dir, "failed"))) return CrossCheckResult.Failed;
     if (fs.existsSync(path.join(dir, "rejected"))) return CrossCheckResult.Rejected;
     reporter(`No result file name 'passed', 'failed' or 'rejected' found in ${dir}`);
     return CrossCheckResult.Failed;
+}
+
+/**
+ * Yields a reporter that doesn't repeat itself
+ * 
+ * @export
+ * @returns 
+ */
+export function reporter() {
+    let reported = new Set<string>();
+    return (msg: string) => {
+        if (reported.has(msg)) return;
+        reported.add(msg);
+        console.warn("WARNING: " + msg);
+    }
 }

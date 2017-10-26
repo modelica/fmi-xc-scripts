@@ -25,6 +25,8 @@ export enum FMIPlatform {
     Win64 = "win64",
     Linux32 = "linux32",
     Linux64 = "linux64",
+    Darwin32 = "darwin32",
+    Darwin64 = "darwin64",
 }
 export function parsePlatform(str: string): FMIPlatform | null {
     switch (str) {
@@ -38,6 +40,10 @@ export function parsePlatform(str: string): FMIPlatform | null {
             return FMIPlatform.Linux32;
         case "linux64":
             return FMIPlatform.Linux64;
+        case "darwin32":
+            return FMIPlatform.Darwin32;
+        case "darwin64":
+            return FMIPlatform.Darwin64;
         default:
             return null;
     }

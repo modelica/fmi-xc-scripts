@@ -7,6 +7,8 @@ export enum Status {
 export interface VariantSupport {
     status: Status;
     num: number;
+    // TODO: I don't think this should be here.  This should be
+    // part of a query that performs some kind of reduce operation
     platforms: {
         darwin64?: number;
         linux32?: number;

@@ -1,6 +1,7 @@
 import * as yargs from 'yargs';
 import { SVN } from './exports';
 import { createRepo } from './repo';
+import { reporter } from './utils';
 
 let argv = yargs
     .string('tool')
@@ -17,12 +18,10 @@ if (!argv.repo) {
 }
 
 if (argv.tool) {
-    run();
+    createRepo(argv.tool, argv.repo, argv.root, reporter()).catch((e) => {
+        console.error(e);
+    })
 } else {
     console.error("No value provided for --tool");
     process.exit(1);
-}
-
-async function run() {
-    await createRepo(argv.tool, argv.repo, argv.root);
 }

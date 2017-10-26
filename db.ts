@@ -1,10 +1,19 @@
 import { ToolsTable, ToolSummary, FMUTable, CrossCheckTable } from './schemas';
-import * as fs from 'fs';
+import * as fs from 'fs-extra';
 import * as path from 'path';
 import * as mongodb from 'mongodb';
 
 export async function loadTools(): Promise<ToolsTable> {
-    return [];
+    let db = await mongoConnect();
+    if (!db) {
+        console.warn("Unable to connect to database");
+        return [];
+    }
+    let col = db.collection<ToolSummary>("tools");
+    let tools = await col.find({});
+    let ret = await tools.toArray();
+    await db.close();
+    return ret;
 }
 
 async function mongoConnect(): Promise<mongodb.Db | null> {
@@ -16,28 +25,30 @@ async function mongoConnect(): Promise<mongodb.Db | null> {
 
 export async function pushTools(toolMap: Map<string, ToolSummary>, artifacts: string): Promise<void> {
     let table: ToolsTable = Array.from(toolMap.values());
+
+    fs.mkdirpSync(artifacts);
     fs.writeFileSync(path.join(artifacts, "tools.json"), JSON.stringify(table, null, 4));
 
     let db = await mongoConnect();
     if (!db) return;
-    let col = db.collection<ToolDocument>("tools");
+    let col = db.collection<ToolSummary>("tools");
 
     // Write to Mongo
     let keys = Array.from(toolMap.keys());
     for (let key of keys) {
-        console.log("Writing ", key);
         let summary = toolMap.get(key);
         if (summary == null) continue;
         let result = await col.updateOne({ _id: summary.toolName },
             { _id: summary.toolName, ...summary }, { upsert: true });
-        if (result.modifiedCount + result.upsertedCount != 1) {
+        if (result.matchedCount + result.upsertedCount != 1) {
+            console.log(result);
             console.warn(`Number of modified documents modified for tool ${summary.toolName} was ${result.modifiedCount}`);
         }
     }
     await db.close();
 }
 
-interface ToolDocument {
+interface FMUDocument {
     name: string;
     version: string;
     variant: string;
@@ -47,15 +58,17 @@ interface ToolDocument {
 }
 
 export async function pushFMUs(fmus: FMUTable, artifacts: string): Promise<void> {
+    fs.mkdirpSync(artifacts);
     fs.writeFileSync(path.join(artifacts, "fmus.json"), JSON.stringify(fmus, null, 4));
+
     let db = await mongoConnect();
     if (!db) return;
-    let col = db.collection<ToolDocument>("fmus");
+    let col = db.collection<FMUDocument>("fmus");
 
     // Write to Mongo
     for (let i = 0; i < fmus.length; i++) {
         let fmu = fmus[i];
-        let doc: ToolDocument = {
+        let doc: FMUDocument = {
             name: fmu.name,
             version: fmu.version,
             variant: fmu.variant,
@@ -65,7 +78,7 @@ export async function pushFMUs(fmus: FMUTable, artifacts: string): Promise<void>
         }
         try {
             let result = await col.updateOne(doc, doc, { upsert: true });
-            if (result.modifiedCount + result.upsertedCount != 1) {
+            if (result.matchedCount + result.upsertedCount != 1) {
                 let entry = JSON.stringify(fmu);
                 console.warn(`Number of modified documents modified for FMU '${entry}' was ${result.modifiedCount}`);
             }
@@ -89,11 +102,12 @@ interface CrossCheckDocument {
 }
 
 export async function pushCrossChecks(xc: CrossCheckTable, artifacts: string): Promise<void> {
+    fs.mkdirpSync(artifacts);
     fs.writeFileSync(path.join(artifacts, "xc_results.json"), JSON.stringify(xc, null, 4));
 
     let db = await mongoConnect();
     if (!db) return;
-    let col = db.collection<ToolDocument>("cross-check");
+    let col = db.collection<CrossCheckDocument>("cross-check");
 
     // Write to Mongo
     for (let i = 0; i < xc.length; i++) {
@@ -109,7 +123,7 @@ export async function pushCrossChecks(xc: CrossCheckTable, artifacts: string): P
         }
         try {
             let result = await col.updateOne(doc, doc, { upsert: true });
-            if (result.modifiedCount + result.upsertedCount != 1) {
+            if (result.matchedCount + result.upsertedCount != 1) {
                 let entry = JSON.stringify(result);
                 console.warn(`Number of modified documents modified for FMU '${entry}' was ${result.modifiedCount}`);
             }

@@ -100,6 +100,6 @@ export async function processRepo(dir: string, repo: string, artifactsDir: strin
 
     // Write out: tools.json (ToolsTable)
     // TODO: We could write this earlier if we ditch the platforms stuff
-    await pushTools(toolMap, artifactsDir);
+    await pushTools(toolMap, local, artifactsDir);
 }
 

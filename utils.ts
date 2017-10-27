@@ -11,6 +11,10 @@ import { ImportDetails } from './imports';
 import * as fs from 'fs';
 import * as path from 'path';
 
+import * as debug from 'debug';
+const utilDebug = debug('utils');
+//utilDebug.enabled = true;
+
 export enum ReportLevel {
     Minor = 0,
     Major = 1,
@@ -255,18 +259,28 @@ export function buildTable(imports: ImportDetails[], reporter: Reporter): CrossC
         let status = parseResult(imp.dir, reporter);
         switch (status) {
             case CrossCheckResult.Passed:
+                utilDebug('Adding %s to list of passed tests for %s:%s -> %s:%s',
+                    imp.model, imp.exporter.tool, imp.exporter.version, imp.importer.tool,
+                    imp.importer.version);
                 ret[existing].passed.push(imp.model);
                 break;
             case CrossCheckResult.Rejected:
+                utilDebug('Adding %s to list of rejected tests for %s:%s -> %s:%s',
+                    imp.model, imp.exporter.tool, imp.exporter.version, imp.importer.tool,
+                    imp.importer.version);
                 ret[existing].rejected.push(imp.model);
                 break;
             case CrossCheckResult.Failed:
+                utilDebug('Adding %s to list of failed tests for %s:%s -> %s:%s',
+                    imp.model, imp.exporter.tool, imp.exporter.version, imp.importer.tool,
+                    imp.importer.version);
                 ret[existing].failed.push(imp.model);
                 break;
             default:
                 throw new Error("Unrecognized cross check result, this should not happen");
         }
     })
+    utilDebug("Cross-check Table: %o", ret);
     return ret;
 }
 

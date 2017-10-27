@@ -31,8 +31,10 @@ async function run() {
     for (let file of files) {
         let tool = file.replace(".info", "");
         let rdir = path.join(argv.repodir, tool);
-        console.log(`Create repo for tool ${tool} in ${rdir} pulling data from ${argv.root}`);
-        if (argv.create) await createRepo(tool, rdir, argv.root, report);
+        if (argv.create) {
+            console.log(`Create repo for tool ${tool} in ${rdir} pulling data from ${argv.root}`);
+            await createRepo(tool, rdir, argv.root, report);
+        }
         if (argv.process) {
             try {
                 console.log(`  Processing tool data in repo for tool ${tool}`);

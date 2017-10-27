@@ -17,7 +17,7 @@ export async function createRepo(tool: string, repo: string, root: string, repor
     let toolFileName = `${tool}.info`;
     let toolFile = path.join(root, "tools", toolFileName);
     if (fs.existsSync(toolFile)) {
-        let dst = path.join(repo, toolFile)
+        let dst = path.join(repo, toolFileName)
         createDebug("Copying tool information file from '%s' to '%s'", toolFile, dst);
         fs.copySync(toolFile, dst);
     } else {

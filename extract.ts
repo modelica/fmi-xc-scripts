@@ -71,7 +71,7 @@ export async function processRepo(dir: string, repo: string, artifactsDir: strin
             })
 
             // Write out: fmus.json (FMUTable)
-            await pushFMUs(fmus, artifactsDir);
+            await pushFMUs(fmus, local, artifactsDir);
         }
     } catch (e) {
         report("Error while processing exports in " + dir + ": " + e.message, ReportLevel.Fatal);
@@ -89,9 +89,10 @@ export async function processRepo(dir: string, repo: string, artifactsDir: strin
             let xc: CrossCheckTable = buildTable(imports, report);
 
             // Write out: xc_results.json (CrossCheckTable)
-            await pushCrossChecks(xc, artifactsDir);
+            await pushCrossChecks(xc, local, artifactsDir);
         } catch (e) {
             report("Error while processing imports in " + dir + ": " + e.message, ReportLevel.Fatal);
+            console.log(e);
         }
     } else {
         if (fs.existsSync(xcdir)) stepsDebug("Skipping import data");

@@ -56,6 +56,7 @@ export async function createRepo(tool: string, repo: string, root: string, repor
         });
     } catch (e) {
         report("Error while extracting import directories for " + tool + ": " + e.message, ReportLevel.Fatal);
+        console.log(e);
     }
 
     // TODO: Create circle.yml

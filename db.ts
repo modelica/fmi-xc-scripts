@@ -119,9 +119,8 @@ interface CrossCheckDocument {
     export_version: string;
     import_tool: string;
     import_version: string;
-    passed: string[];
-    rejected: string[];
-    failed: string[];
+    model: string;
+    status: string;
 }
 
 export async function pushCrossChecks(xc: CrossCheckTable, artifacts: string): Promise<void> {
@@ -147,9 +146,8 @@ export async function pushCrossChecks(xc: CrossCheckTable, artifacts: string): P
             export_version: result.exporter.version,
             import_tool: result.importer.tool,
             import_version: result.importer.version,
-            passed: result.passed,
-            rejected: result.rejected,
-            failed: result.failed,
+            model: result.model,
+            status: result.status,
         }
         try {
             let result = await col.updateOne(doc, doc, { upsert: true });

@@ -1,20 +1,15 @@
 import { FMIVersion, FMIVariant, FMIPlatform, ToolDetails } from './fmi';
 
-export enum CrossCheckResult {
-    Passed = "passed",
-    Rejected = "rejected",
-    Failed = "failed",
-}
+export type CrossCheckStatus = "passed" | "rejected" | "failed";
 
-export interface CrossCheckSummary {
+export interface CrossCheckResult {
     version: FMIVersion;
     variant: FMIVariant;
     platform: FMIPlatform;
     importer: ToolDetails;
     exporter: ToolDetails;
-    passed: string[];
-    rejected: string[];
-    failed: string[];
+    model: string;
+    status: CrossCheckStatus;
 }
 
-export type CrossCheckTable = CrossCheckSummary[];
+export type CrossCheckTable = CrossCheckResult[];

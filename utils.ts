@@ -3,7 +3,7 @@ var ini = require('ini');
 
 import {
     ToolSummary, VariantSupport, Status, parseVersion, parseVariant, parsePlatform,
-    CrossCheckSummary, CrossCheckTable, CrossCheckResult
+    CrossCheckTable, CrossCheckResult, CrossCheckStatus,
 } from './schemas';
 import { ExportDetails } from './exports';
 import { ImportDetails } from './imports';
@@ -223,73 +223,35 @@ export function validateImport(local: string[], tools: string[]) {
 }
 
 export function buildTable(imports: ImportDetails[], reporter: Reporter): CrossCheckTable {
-    // Create an empty table
-    let ret: CrossCheckTable = [];
-
     // Loop over all imports
-    imports.forEach((imp) => {
-        // Check to see if there is already an in the cross-check table for this particular
-        // combination of import and export tool
-        let existing = ret.findIndex((summary) => summary.importer.tool == imp.importer.tool &&
-            summary.importer.version == imp.importer.version && summary.exporter.tool == imp.exporter.tool &&
-            summary.exporter.version == imp.exporter.version);
-
-        // If one doesn't exist, let's add it now.
-        if (existing == -1) {
-            let version = parseVersion(imp.fmi); // TODO: change to ex.version
-            let variant = parseVariant(imp.variant);
-            let platform = parsePlatform(imp.platform);
-            if (version == null || variant == null || platform == null) {
-                throw new Error("Unacceptable value found in previously validated data, this should not happen");
-            }
-            let newResult: CrossCheckSummary = {
-                version: version,
-                variant: variant,
-                platform: platform,
-                importer: imp.importer,
-                exporter: imp.exporter,
-                passed: [],
-                failed: [],
-                rejected: [],
-            };
-            existing = ret.length;
-            ret.push(newResult);
+    utilDebug("Building cross-check result table");
+    return imports.map((imp): CrossCheckResult => {
+        let version = parseVersion(imp.fmi); // TODO: change to ex.version
+        let variant = parseVariant(imp.variant);
+        let platform = parsePlatform(imp.platform);
+        if (version == null || variant == null || platform == null) {
+            throw new Error("Unacceptable value found in previously validated data, this should not happen");
         }
-
         let status = parseResult(imp.dir, reporter);
-        switch (status) {
-            case CrossCheckResult.Passed:
-                utilDebug('Adding %s to list of passed tests for %s:%s -> %s:%s',
-                    imp.model, imp.exporter.tool, imp.exporter.version, imp.importer.tool,
-                    imp.importer.version);
-                ret[existing].passed.push(imp.model);
-                break;
-            case CrossCheckResult.Rejected:
-                utilDebug('Adding %s to list of rejected tests for %s:%s -> %s:%s',
-                    imp.model, imp.exporter.tool, imp.exporter.version, imp.importer.tool,
-                    imp.importer.version);
-                ret[existing].rejected.push(imp.model);
-                break;
-            case CrossCheckResult.Failed:
-                utilDebug('Adding %s to list of failed tests for %s:%s -> %s:%s',
-                    imp.model, imp.exporter.tool, imp.exporter.version, imp.importer.tool,
-                    imp.importer.version);
-                ret[existing].failed.push(imp.model);
-                break;
-            default:
-                throw new Error("Unrecognized cross check result, this should not happen");
+        let ret: CrossCheckResult = {
+            version: version,
+            variant: variant,
+            platform: platform,
+            importer: imp.importer,
+            exporter: imp.exporter,
+            model: imp.model,
+            status: status,
         }
-    })
-    utilDebug("Cross-check Table: %o", ret);
-    return ret;
+        return ret;
+    });
 }
 
-function parseResult(dir: string, reporter: Reporter): CrossCheckResult {
-    if (fs.existsSync(path.join(dir, "passed"))) return CrossCheckResult.Passed;
-    if (fs.existsSync(path.join(dir, "failed"))) return CrossCheckResult.Failed;
-    if (fs.existsSync(path.join(dir, "rejected"))) return CrossCheckResult.Rejected;
+function parseResult(dir: string, reporter: Reporter): CrossCheckStatus {
+    if (fs.existsSync(path.join(dir, "passed"))) return "passed";
+    if (fs.existsSync(path.join(dir, "failed"))) return "failed";
+    if (fs.existsSync(path.join(dir, "rejected"))) return "rejected";
     reporter(`No result file name 'passed', 'failed' or 'rejected' found in ${dir}`, ReportLevel.Minor);
-    return CrossCheckResult.Failed;
+    return "failed";
 }
 
 /**

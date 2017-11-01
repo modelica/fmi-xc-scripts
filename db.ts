@@ -89,14 +89,11 @@ export async function pushFMUs(fmus: FMUTable, local: string[], artifacts: strin
     try {
         let col = db.collection<FMUDocument>("fmus");
 
-        // TODO: Remove all records related to the tools being processed
         // Remove all records related to the tools being processed
         await Promise.all(local.map((tool) => col.deleteMany({ export_tool: tool })));
 
-        // Write to Mongo
-        for (let i = 0; i < fmus.length; i++) {
-            let fmu = fmus[i];
-            let doc: FMUDocument = {
+        let docs = fmus.map((fmu) => {
+            return {
                 name: fmu.name,
                 version: fmu.version,
                 variant: fmu.variant,
@@ -104,15 +101,13 @@ export async function pushFMUs(fmus: FMUTable, local: string[], artifacts: strin
                 export_tool: fmu.exporter.tool,
                 export_version: fmu.exporter.version,
             }
-            try {
-                let result = await col.updateOne(doc, doc, { upsert: true });
-                if (result.matchedCount + result.upsertedCount != 1) {
-                    let entry = JSON.stringify(fmu);
-                    console.warn(`Number of modified documents modified for FMU '${entry}' was ${result.modifiedCount}`);
-                }
-            } catch (e) {
-                let entry = JSON.stringify(fmu);
-                console.error("Error while writing FMU: " + entry + ": ", e.message);
+        });
+
+        // Write to Mongo
+        if (docs.length > 0) {
+            let result = await col.insertMany(docs);
+            if (result.insertedCount != docs.length) {
+                console.warn(`Expected ${docs.length} cross-check results to be inserted, but only ${result.insertedCount} were actually inserted`);
             }
         }
         mongoDebug("  All FMUs pushed to Mongo");

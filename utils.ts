@@ -159,7 +159,7 @@ export function validate<T>(array: Array<T>, validate: (x: T, report: Reporter) 
     array.forEach((elem) => {
         let count = 0;
         let reporter = (x: string, level: ReportLevel) => {
-            count++;
+            if (level > ReportLevel.Major) count++;
             report(x, level);
         }
         validate(elem, reporter);

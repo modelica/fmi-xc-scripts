@@ -1,9 +1,6 @@
 import * as yargs from 'yargs';
 import * as path from 'path';
-import { SVN } from './exports';
-import { infoFiles, reporter, ReportLevel } from './utils';
-import { createRepo } from './repo';
-import { processRepo } from './extract';
+import { SVN, infoFiles, reporter, ReportLevel, createRepo, processRepo } from '../core';
 
 const argv = yargs
     .string('repodir')

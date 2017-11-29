@@ -1,7 +1,7 @@
 var find = require('findit');
 var path = require('path');
 import { ExportDetails, SVN, Predicate } from './exports';
-import { ToolDetails } from './schemas';
+import { ToolDetails } from '@modelica/fmi-data';
 
 export const CrossChecks = path.join(SVN, "CrossCheck_Results");
 

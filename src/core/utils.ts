@@ -4,7 +4,7 @@ var ini = require('ini');
 import {
     ToolSummary, VariantSupport, Status, parseVersion, parseVariant, parsePlatform,
     CrossCheckTable, CrossCheckResult, CrossCheckStatus,
-} from './schemas';
+} from '@modelica/fmi-data';
 import { ExportDetails } from './exports';
 import { ImportDetails } from './imports';
 

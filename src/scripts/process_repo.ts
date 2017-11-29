@@ -1,7 +1,6 @@
 import * as yargs from 'yargs';
 import * as path from 'path';
-import { processRepo } from './extract';
-import { reporter, ReportLevel } from './utils';
+import { processRepo, reporter, ReportLevel } from '../core';
 
 let argv = yargs
     .string('artifacts')

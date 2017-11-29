@@ -1,7 +1,7 @@
 var find = require('findit');
 var path = require('path');
 
-import { ToolDetails } from './schemas';
+import { ToolDetails } from '@modelica/fmi-data';
 
 export const SVN = "/Users/mtiller/Source/ModelicaAssociation/public";
 export const FMUs = path.join(SVN, "Test_FMUs");

@@ -1,4 +1,4 @@
-import { ToolsTable, ToolSummary, FMUTable, CrossCheckTable } from './schemas';
+import { ToolsTable, ToolSummary, FMUTable, CrossCheckTable } from '@modelica/fmi-data';
 import * as fs from 'fs-extra';
 import * as path from 'path';
 import * as mongodb from 'mongodb';
@@ -7,7 +7,7 @@ import * as debug from 'debug';
 const mongoDebug = debug('fmi:db');
 //mongoDebug.enabled = true;
 
-export async function loadTools(): Promise<ToolsTable> {
+export async function loadTools(_artifacts: string): Promise<ToolsTable> {
     mongoDebug("Loading tools from Mongo");
     let db = await mongoConnect();
     if (!db) {

@@ -1,7 +1,5 @@
 import * as yargs from 'yargs';
-import { SVN } from './exports';
-import { createRepo } from './repo';
-import { reporter, ReportLevel } from './utils';
+import { SVN, createRepo, reporter, ReportLevel } from '../core';
 
 let argv = yargs
     .string('tool')

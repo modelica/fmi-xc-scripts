@@ -1,6 +1,7 @@
 import { infoFiles, parseInfo, validate, validateExport, validateImport, buildTable, Reporter, ReportLevel } from './utils';
-import { loadTools, pushTools, pushFMUs, pushCrossChecks } from './db';
-import { ToolSummary, FMUTable, parsePlatform, parseVariant, parseVersion, CrossCheckTable } from './schemas';
+//import { loadTools, pushTools, pushFMUs, pushCrossChecks } from './db/mongo';
+import { loadTools, pushTools, pushFMUs, pushCrossChecks } from '../db/file';
+import { ToolSummary, FMUTable, parsePlatform, parseVariant, parseVersion, CrossCheckTable } from '@modelica/fmi-data';
 import { getExports } from './exports';
 import { getImports } from './imports';
 import * as debug from 'debug';
@@ -18,7 +19,7 @@ export async function processRepo(dir: string, repo: string, artifactsDir: strin
     stepsDebug("  Artifacts directory: %s", artifactsDir);
     stepsDebug("  Process imports: %j", imports);
     stepsDebug("Loading external tools");
-    let existing = await loadTools();
+    let existing = await loadTools(artifactsDir);
 
     // Build a map that maps the tool name to it's details (checking for duplicates)
     let toolMap = new Map<string, ToolSummary>();

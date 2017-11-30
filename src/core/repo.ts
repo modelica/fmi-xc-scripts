@@ -26,7 +26,7 @@ export async function createRepo(tool: string, repo: string, root: string, repor
 
     createDebug("Collecting export directories for %s", tool);
     try {
-        let edetails = await getExports(FMUs, (d) => d.exporter.tool == tool);
+        let edetails = await getExports(FMUs, (d) => d.export_tool == tool);
         edetails.forEach((match, index) => {
             let from = path.join(match.dir);
             let to = path.join(repo, "Test_FMUs", match.rel);
@@ -43,7 +43,7 @@ export async function createRepo(tool: string, repo: string, root: string, repor
 
     createDebug("Collecting import directories for %s", tool);
     try {
-        let idetails = await getImports(crossChecks, (d) => d.importer.tool == tool);
+        let idetails = await getImports(crossChecks, (d) => d.import_tool == tool);
         idetails.forEach((match, index) => {
             let from = path.join(match.dir);
             let to = path.join(repo, "CrossCheck_Results", match.rel);
@@ -58,6 +58,4 @@ export async function createRepo(tool: string, repo: string, root: string, repor
         report("Error while extracting import directories for " + tool + ": " + e.message, ReportLevel.Fatal);
         console.log(e);
     }
-
-    // TODO: Create circle.yml
 }

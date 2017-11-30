@@ -1,8 +1,6 @@
 var find = require('findit');
 var path = require('path');
 
-import { ToolDetails } from '@modelica/fmi-data';
-
 export const SVN = "/Users/mtiller/Source/ModelicaAssociation/public";
 export const FMUs = path.join(SVN, "Test_FMUs");
 
@@ -14,7 +12,8 @@ export interface ExportDetails {
     fmi: string;
     variant: string;
     platform: string;
-    exporter: ToolDetails;
+    export_tool: string;
+    export_version: string;
     model: string;
 }
 
@@ -25,10 +24,8 @@ function parseExport(dir: string, rel: string, parts: string[]): ExportDetails {
         fmi: parts[0],
         variant: parts[1],
         platform: parts[2],
-        exporter: {
-            tool: parts[3],
-            version: parts[4],
-        },
+        export_tool: parts[3],
+        export_version: parts[4],
         model: parts[5],
     };
 }

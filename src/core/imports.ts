@@ -1,12 +1,12 @@
 var find = require('findit');
 var path = require('path');
 import { ExportDetails, SVN, Predicate } from './exports';
-import { ToolDetails } from '@modelica/fmi-data';
 
 export const CrossChecks = path.join(SVN, "CrossCheck_Results");
 
 export interface ImportDetails extends ExportDetails {
-    importer: ToolDetails;
+    import_tool: string;
+    import_version: string;
 }
 
 function parseImport(dir: string, rel: string, parts: string[]): ImportDetails {
@@ -16,14 +16,10 @@ function parseImport(dir: string, rel: string, parts: string[]): ImportDetails {
         fmi: parts[0],
         variant: parts[1],
         platform: parts[2],
-        importer: {
-            tool: parts[3],
-            version: parts[4],
-        },
-        exporter: {
-            tool: parts[5],
-            version: parts[6],
-        },
+        import_tool: parts[3],
+        import_version: parts[4],
+        export_tool: parts[5],
+        export_version: parts[6],
         model: parts[7],
     };
 }

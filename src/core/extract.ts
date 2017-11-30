@@ -67,7 +67,8 @@ export async function processRepo(dir: string, repo: string, artifactsDir: strin
                     version: version,
                     variant: variant,
                     platform: platform,
-                    exporter: ex.exporter,
+                    export_tool: ex.export_tool,
+                    export_version: ex.export_version,
                 }
             })
 

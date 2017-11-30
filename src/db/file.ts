@@ -41,18 +41,6 @@ export async function pushFMUs(fmus: FMUTable, _local: string[], artifacts: stri
     fs.writeFileSync(path.join(artifacts, "fmus.json"), JSON.stringify(fmus, null, 4));
 }
 
-export interface CrossCheckDocument {
-    version: string;
-    variant: string;
-    platform: string;
-    export_tool: string;
-    export_version: string;
-    import_tool: string;
-    import_version: string;
-    model: string;
-    status: string;
-}
-
 export async function pushCrossChecks(xc: CrossCheckTable, _local: string[], artifacts: string): Promise<void> {
     fileDebug("Pushing data about %d cross check results: ", xc.length);
 

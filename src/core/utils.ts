@@ -171,10 +171,10 @@ export function validate<T>(array: Array<T>, validate: (x: T, report: Reporter) 
 // TODO: Write with report callback
 export function validateExport(local: string[]) {
     return (x: ExportDetails, reporter: Reporter): void => {
-        let idx = local.indexOf(x.exporter.tool);
+        let idx = local.indexOf(x.export_tool);
         if (idx == -1) {
             let names = local.join(", ");
-            reporter(`Tool '${x.exporter.tool}' is not among list of tools defined in this repo: ${names}`, ReportLevel.Major);
+            reporter(`Tool '${x.export_tool}' is not among list of tools defined in this repo: ${names}`, ReportLevel.Major);
         }
         if (parseVersion(x.fmi) == null) reporter(`Unknown FMI version '${x.fmi}'`, ReportLevel.Major);
         if (parseVariant(x.variant) == null) reporter(`Unknown FMI variant '${x.variant}'`, ReportLevel.Major);
@@ -199,14 +199,14 @@ export function validateExport(local: string[]) {
 
 export function validateImport(local: string[], tools: string[]) {
     return (x: ImportDetails, reporter: Reporter): void => {
-        let idx = local.indexOf(x.importer.tool);
+        let idx = local.indexOf(x.import_tool);
         if (idx == -1) {
             let names = local.join(", ");
-            reporter(`Import tool '${x.importer.tool}' is not among list of tools defined in this repo: ${names}`, ReportLevel.Major);
+            reporter(`Import tool '${x.import_tool}' is not among list of tools defined in this repo: ${names}`, ReportLevel.Major);
         }
-        idx = tools.indexOf(x.exporter.tool);
+        idx = tools.indexOf(x.export_tool);
         if (idx == -1) {
-            reporter(`Export tool '${x.exporter.tool}' is not among the list of known FMI tools`, ReportLevel.Major);
+            reporter(`Export tool '${x.export_tool}' is not among the list of known FMI tools`, ReportLevel.Major);
         }
         if (parseVersion(x.fmi) == null) reporter(`Unknown FMI version '${x.fmi}'`, ReportLevel.Major);
         if (parseVariant(x.variant) == null) reporter(`Unknown FMI variant '${x.variant}'`, ReportLevel.Major);
@@ -237,8 +237,10 @@ export function buildTable(imports: ImportDetails[], reporter: Reporter): CrossC
             version: version,
             variant: variant,
             platform: platform,
-            importer: imp.importer,
-            exporter: imp.exporter,
+            import_tool: imp.import_tool,
+            import_version: imp.import_version,
+            export_tool: imp.export_tool,
+            export_version: imp.export_version,
             model: imp.model,
             status: status,
         }

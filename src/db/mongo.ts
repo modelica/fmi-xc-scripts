@@ -98,8 +98,8 @@ export async function pushFMUs(fmus: FMUTable, local: string[], artifacts: strin
                 version: fmu.version,
                 variant: fmu.variant,
                 platform: fmu.platform,
-                export_tool: fmu.exporter.tool,
-                export_version: fmu.exporter.version,
+                export_tool: fmu.export_tool,
+                export_version: fmu.export_version,
             }
         });
 
@@ -152,10 +152,10 @@ export async function pushCrossChecks(xc: CrossCheckTable, local: string[], arti
                 version: result.version,
                 variant: result.variant,
                 platform: result.platform,
-                export_tool: result.exporter.tool,
-                export_version: result.exporter.version,
-                import_tool: result.importer.tool,
-                import_version: result.importer.version,
+                export_tool: result.export_tool,
+                export_version: result.export_version,
+                import_tool: result.import_tool,
+                import_version: result.import_version,
                 model: result.model,
                 status: result.status,
             }

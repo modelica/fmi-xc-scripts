@@ -1,12 +1,15 @@
 import * as yargs from 'yargs';
 import * as path from 'path';
 import { SVN, infoFiles, reporter, ReportLevel, createRepo, processRepo } from '../core';
+import { createDatabase } from '../db';
 
 const argv = yargs
     .string('repodir')
     .default('repodir', null)
     .string('root')
     .default('root', SVN)
+    .string('db')
+    .default('db', 'github')
     .boolean('create')
     .default('create', true)
     .boolean('process')
@@ -25,6 +28,7 @@ if (!argv.repodir) {
 async function run() {
     let report = reporter(argv.pedantic ? ReportLevel.Minor : ReportLevel.Major);
     let files = await infoFiles(path.join(argv.root, "tools"));
+    let db = createDatabase(argv.db);
     for (let file of files) {
         let tool = file.replace(".info", "");
         let rdir = path.join(argv.repodir, tool);
@@ -38,7 +42,7 @@ async function run() {
                 let lower = tool.toLowerCase();
                 let repo = `git@github.com:modelica/fmixc-${lower}`
                 let artifactsDir = path.join(rdir, "artifacts");
-                await processRepo(rdir, repo, artifactsDir, false, report);
+                await processRepo(db, rdir, repo, artifactsDir, false, report);
             } catch (e) {
                 console.error("Error while processing tool " + tool + ": ", e.message);
             }
@@ -53,7 +57,7 @@ async function run() {
                 let lower = tool.toLowerCase();
                 let repo = `git@github.com:modelica/fmixc-${lower}`
                 let artifactsDir = path.join(rdir, "artifacts");
-                await processRepo(rdir, repo, artifactsDir, true, report);
+                await processRepo(db, rdir, repo, artifactsDir, true, report);
             } catch (e) {
                 console.error("Error while processing tool " + tool + ": ", e.message);
             }

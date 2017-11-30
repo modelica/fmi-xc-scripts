@@ -1,12 +1,15 @@
 import * as yargs from 'yargs';
 import * as path from 'path';
 import { processRepo, reporter, ReportLevel } from '../core';
+import { createDatabase } from '../db';
 
 let argv = yargs
     .string('artifacts')
     .default('artifacts', 'artifacts')
     .string('dir')
     .default('dir', null)
+    .string('db')
+    .default('db', 'github')
     .string('repo')
     .default('repo', null)
     .boolean('imports')
@@ -32,7 +35,8 @@ if (argv.pedantic) {
     min = ReportLevel.Major;
 }
 let report = reporter(min);
+let db = createDatabase(argv.db);
 
-processRepo(argv.dir, argv.repo, artifactsDir, argv.imports, report).catch((e) => {
+processRepo(db, argv.dir, argv.repo, artifactsDir, argv.imports, report).catch((e) => {
     console.error(e);
 })

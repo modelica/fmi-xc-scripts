@@ -1,6 +1,6 @@
 import { infoFiles, parseInfo, validate, validateExport, validateImport, buildTable, Reporter, ReportLevel } from './utils';
 //import { loadTools, pushTools, pushFMUs, pushCrossChecks } from './db/mongo';
-import { loadTools, pushTools, pushFMUs, pushCrossChecks } from '../db/file';
+import { Database } from '../db';
 import { ToolSummary, FMUTable, parsePlatform, parseVariant, parseVersion, CrossCheckTable } from '@modelica/fmi-data';
 import { getExports } from './exports';
 import { getImports } from './imports';
@@ -13,13 +13,13 @@ const stepsDebug = debug("extract:steps");
 const dataDebug = debug("extract:data");
 //dataDebug.enabled = true;
 
-export async function processRepo(dir: string, repo: string, artifactsDir: string, imports: boolean, report: Reporter) {
+export async function processRepo(db: Database, dir: string, repo: string, artifactsDir: string, imports: boolean, report: Reporter) {
     // Read external tools database
     stepsDebug("Processing repo %s located in '%s'", repo, dir);
     stepsDebug("  Artifacts directory: %s", artifactsDir);
     stepsDebug("  Process imports: %j", imports);
     stepsDebug("Loading external tools");
-    let existing = await loadTools(artifactsDir);
+    let existing = await db.loadTools(artifactsDir);
 
     // Build a map that maps the tool name to it's details (checking for duplicates)
     let toolMap = new Map<string, ToolSummary>();
@@ -73,7 +73,7 @@ export async function processRepo(dir: string, repo: string, artifactsDir: strin
             })
 
             // Write out: fmus.json (FMUTable)
-            await pushFMUs(fmus, local, artifactsDir);
+            await db.pushFMUs(fmus, local, artifactsDir);
         }
     } catch (e) {
         report("Error while processing exports in " + dir + ": " + e.message, ReportLevel.Fatal);
@@ -91,7 +91,7 @@ export async function processRepo(dir: string, repo: string, artifactsDir: strin
             let xc: CrossCheckTable = buildTable(imports, report);
 
             // Write out: xc_results.json (CrossCheckTable)
-            await pushCrossChecks(xc, local, artifactsDir);
+            await db.pushCrossChecks(xc, local, artifactsDir);
         } catch (e) {
             report("Error while processing imports in " + dir + ": " + e.message, ReportLevel.Fatal);
             console.log(e);
@@ -103,6 +103,6 @@ export async function processRepo(dir: string, repo: string, artifactsDir: strin
 
     // Write out: tools.json (ToolsTable)
     // TODO: We could write this earlier if we ditch the platforms stuff
-    await pushTools(toolMap, local, artifactsDir);
+    await db.pushTools(toolMap, local, artifactsDir);
 }
 

@@ -1,5 +1,5 @@
 {
-  "name": "@modelica/xc-scripts",
+  "name": "@modelica/fmi-xc-scripts",
   "version": "0.1.0",
   "description": "Scripts for MAXC project",
   "scripts": {
@@ -21,6 +21,10 @@
     "@types/yargs": "^8.0.2",
     "ts-node": "^3.3.0",
     "typescript": "^2.5.3"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/xogeny/fmi-xc-scripts.git"
   },
   "dependencies": {
     "@modelica/fmi-data": "^0.6.1",

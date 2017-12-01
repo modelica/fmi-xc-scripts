@@ -2,7 +2,6 @@
   "name": "@modelica/xc-scripts",
   "version": "0.1.0",
   "description": "Scripts for MAXC project",
-  "main": "extract_exports.js",
   "scripts": {
     "compile": "tsc",
     "test": "echo \"Error: no test specified\" && exit 1"

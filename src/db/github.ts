@@ -3,53 +3,95 @@ import { Database } from './db';
 import * as fs from 'fs-extra';
 import * as path from 'path';
 import * as axios from 'axios';
+import { AxiosRequestConfig } from 'axios';
 
 import * as debug from 'debug';
 const githubDebug = debug('fmi:github');
-githubDebug.enabled = true;
-
-githubDebug("  Axios = %o", axios.default);
+// githubDebug.enabled = true;
 
 function getContentsURL(file: string) {
     return `https://api.github.com/repos/modelica/fmi-standard.org/contents/${file}`
 }
 
+const big = false;
 async function readFile<T extends {}>(file: string, during: string): Promise<T> {
-    githubDebug("  Reading file %s", file);
-    let url = getContentsURL(file);
-    githubDebug("    API URL: %s", url);
-    let resp = await axios.default(url, {});
-    let download_url = resp.data.download_url;
-    githubDebug("    Download URL: %s", download_url);
-    resp = await axios.default(download_url, {});
-    if (resp.status != 200) {
-        githubDebug("      It looks like something went wrong, expected status code 200 during %s but got %d", during, resp.status);
+    try {
+        githubDebug("  Reading file %s", file);
+        let config: AxiosRequestConfig = {
+            headers: {},
+        };
+
+        let token = process.env["GITHUB_TOKEN"];
+        if (token) {
+            config.headers["Authorization"] = `token ${token}`
+            githubDebug("    Adding Authorization header");
+        } else {
+            githubDebug("    Making request anonymously");
+        }
+
+        let url = getContentsURL(file);
+        githubDebug("    API URL: %s", url);
+        let resp = await axios.default(url, config);
+        let sha = resp.data.sha;
+        githubDebug("    SHA: %s", sha);
+        let blobUrl = `https://api.github.com/repos/modelica/fmi-standard.org/git/blobs/${sha}`;
+        githubDebug("    Blob URL: %s", blobUrl);
+        if (big) {
+            resp = await axios.default(blobUrl, config);
+            githubDebug("    Data API response included: %j", Object.keys(resp));
+            let blob = new Buffer(resp.data.content, resp.data.encoding);
+            let obj = JSON.parse(blob.toString());
+
+            return obj;
+        } else {
+            let download_url = resp.data.download_url;
+            githubDebug("    Download URL: %s", download_url);
+            resp = await axios.default(download_url, config);
+            if (resp.status != 200) {
+                githubDebug("      It looks like something went wrong, expected status code 200 during %s but got %d", during, resp.status);
+            }
+            return resp.data;
+        }
+    } catch (e) {
+        // if (e.hasOwnProperty("response")) {
+        //     console.error(Object.keys(e.response));
+        //     //console.error(e.response.data);
+        // }
+        throw e;
+        //throw new Error("Error reading " + file + " during " + during + ": " + e.message);
     }
-    return resp.data;
 }
 
 async function writeFile<T extends {}>(file: string, data: T, token: string, during: string): Promise<void> {
-    githubDebug("  Writing file %s", file);
-    let url = getContentsURL(file);
-    githubDebug("    URL for contents: %s", url);
-    let cur = await axios.default(url, {});
-    let sha = cur.data.sha;
-    githubDebug("    Current SHA: %s", sha);
-    let resp = await axios.default(url, {
-        method: "PUT",
-        headers: {
-            Authorization: `token ${token}`,
-        },
-        data: {
-            path: file,
-            message: "Data pushed by fmi-scripts during " + during,
-            content: new Buffer(JSON.stringify(data)).toString("base64"),
-            sha: sha,
+    try {
+        let config: AxiosRequestConfig = {
+            headers: {
+                Authorization: `token ${token}`,
+            }
+        };
+        githubDebug("  Writing file %s", file);
+        let url = getContentsURL(file);
+        githubDebug("    URL for contents: %s", url);
+        let cur = await axios.default(url, config);
+        let sha = cur.data.sha;
+        githubDebug("    Current SHA: %s", sha);
+        let resp = await axios.default(url, {
+            ...config, method: "PUT", data: {
+                path: file,
+                message: "Data pushed by fmi-scripts during " + during,
+                content: new Buffer(JSON.stringify(data)).toString("base64"),
+                sha: sha,
+            }
+        });
+        githubDebug("    Updated file");
+        if (resp.status != 200) {
+            githubDebug("      It seems something went wrong, expect status code 200 but got %d", resp.status);
         }
-    });
-    githubDebug("    Updated file");
-    if (resp.status != 200) {
-        githubDebug("      It seems something went wrong, expect status code 200 but got %d", resp.status);
+    } catch (e) {
+        if (e.hasOwnProperty("response")) {
+            console.error(e.response.data);
+        }
+        throw new Error("Error writing " + file);
     }
 }
 
@@ -57,7 +99,7 @@ export class GithubDatabase implements Database {
     async loadTools(_artifacts: string): Promise<ToolsTable> {
         githubDebug("Loading tools from GitHub");
 
-        let table = readFile<ToolsTable>("_data/tools.json", "reading tools.json");
+        let table = await readFile<ToolsTable>("_data/tools.json", "reading tools.json");
         if (Array.isArray(table)) {
             githubDebug("  Table contains %d tools", table.length);
             return table;
@@ -76,7 +118,8 @@ export class GithubDatabase implements Database {
 
         let token = process.env["GITHUB_TOKEN"];
         if (!token) {
-            githubDebug("  No GitHub token provided, skipping push of tools");
+            console.warn("WARNING: No GitHub token provided, skipping upload of tools data");
+            githubDebug("  No GitHub token provided, skipping upload of tools data");
             return;
         }
 
@@ -109,7 +152,8 @@ export class GithubDatabase implements Database {
 
         let token = process.env["GITHUB_TOKEN"];
         if (!token) {
-            githubDebug("  No GitHub token provided, skipping push of fmus");
+            console.warn("WARNING: No GitHub token provided, skipping upload of exported FMU data");
+            githubDebug("  No GitHub token provided, skipping push of exported FMU data");
             return;
         }
 
@@ -141,7 +185,8 @@ export class GithubDatabase implements Database {
 
         let token = process.env["GITHUB_TOKEN"];
         if (!token) {
-            githubDebug("  No GitHub token provided, skipping push of fmus");
+            console.warn("WARNING: No GitHub token provided, skipping upload of cross check data");
+            githubDebug("  No GitHub token provided, skipping push of cross check data");
             return;
         }
 

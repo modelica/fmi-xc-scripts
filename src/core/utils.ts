@@ -1,3 +1,6 @@
+/**
+ * This file contains various utility functions shared by other packages.
+ */
 var find = require('findit');
 var ini = require('ini');
 
@@ -5,6 +8,7 @@ import {
     ToolSummary, VariantSupport, Status, parseVersion, parseVariant, parsePlatform,
     CrossCheckTable, CrossCheckResult, CrossCheckStatus,
 } from '@modelica/fmi-data';
+
 import { ExportDetails } from './exports';
 import { ImportDetails } from './imports';
 
@@ -13,20 +17,38 @@ import * as path from 'path';
 
 import * as debug from 'debug';
 const utilDebug = debug('utils');
-//utilDebug.enabled = true;
+// utilDebug.enabled = true;
 
+/**
+ * Establishes a "level" for flagging concerns while processing.
+ */
 export enum ReportLevel {
     Minor = 0,
     Major = 1,
     Fatal = 2,
 }
+
+/**
+ * Defines the type for callbacks used to report issues.
+ */
 export type Reporter = (x: string, level: ReportLevel) => void;
 
+/**
+ * This function finds all info files in the specified directory.
+ * 
+ * @param dir Directory to search
+ */
 export function infoFiles(dir: string): string[] {
     let contents = fs.readdirSync(dir);
     return contents.filter((name) => name.endsWith("info"));
 }
 
+/**
+ * A general purpose recursive file search function.
+ * 
+ * @param dir Directory to search (recursively)
+ * @param predicate Used to test whether a given file matches the search criteria
+ */
 export function findFiles(dir: string, predicate: (name: string) => boolean): Promise<string[]> {
     return new Promise((resolve, reject) => {
         let finder = find(dir, {});
@@ -47,6 +69,9 @@ export function findFiles(dir: string, predicate: (name: string) => boolean): Pr
 
 }
 
+/**
+ * This list of required fields in the ".info" files.
+ */
 const requiredFields = ["name", "href",
     // "import_me", "export_me", "slave_cs", "master_cs",
     // "import_me_20", "export_me_20", "slave_cs_20", "master_cs_20",
@@ -91,6 +116,12 @@ function parseStatus(field: string, obj: { [key: string]: string }): VariantSupp
     }
 }
 
+/**
+ * Build ToolSummary data from information contained in the .info file
+ * 
+ * @param filename .info file to read
+ * @param repo Repository associated with this tool
+ */
 export function parseInfo(filename: string, repo: string): ToolSummary {
     let contents = fs.readFileSync(filename, 'utf-8');
     let obj = ini.parse(contents);
@@ -129,6 +160,13 @@ export function parseInfo(filename: string, repo: string): ToolSummary {
     }
 }
 
+/**
+ * Divide an array into two separate arrays, one containing elements that satisfy a predicate and one containing
+ * elements that do not.
+ * 
+ * @param array 
+ * @param predicate 
+ */
 export function partition<T>(array: Array<T>, predicate: (x: T) => boolean): { in: Array<T>, out: Array<T> } {
     let ret: { in: Array<T>, out: Array<T> } = {
         in: [],
@@ -168,7 +206,11 @@ export function validate<T>(array: Array<T>, validate: (x: T, report: Reporter) 
     return ret;
 }
 
-// TODO: Write with report callback
+/**
+ * Return a function that can be used to validate ExportDetails.
+ * 
+ * @param local List of tools local to the repository currently being processed.
+ */
 export function validateExport(local: string[]) {
     return (x: ExportDetails, reporter: Reporter): void => {
         let idx = local.indexOf(x.export_tool);
@@ -197,6 +239,12 @@ export function validateExport(local: string[]) {
     }
 }
 
+/**
+ * Returns a function that validates import details.
+ * 
+ * @param local List of tools local to the repository currently being processed.
+ * @param tools List of all tools
+ */
 export function validateImport(local: string[], tools: string[]) {
     return (x: ImportDetails, reporter: Reporter): void => {
         let idx = local.indexOf(x.import_tool);
@@ -222,6 +270,12 @@ export function validateImport(local: string[], tools: string[]) {
     }
 }
 
+/**
+ * Create a CrossCheckTable where the local tools are the importers.
+ * 
+ * @param imports All import related data for the local tools
+ * @param reporter 
+ */
 export function buildTable(imports: ImportDetails[], reporter: Reporter): CrossCheckTable {
     // Loop over all imports
     utilDebug("Building cross-check result table");
@@ -248,6 +302,11 @@ export function buildTable(imports: ImportDetails[], reporter: Reporter): CrossC
     });
 }
 
+/**
+ * Transform file system data into a CrossCheckStatus enum
+ * @param dir 
+ * @param reporter 
+ */
 function parseResult(dir: string, reporter: Reporter): CrossCheckStatus {
     if (fs.existsSync(path.join(dir, "passed"))) return "passed";
     if (fs.existsSync(path.join(dir, "failed"))) return "failed";

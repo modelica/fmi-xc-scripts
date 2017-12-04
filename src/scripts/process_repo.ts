@@ -41,4 +41,5 @@ let db = createDatabase(argv.db);
 
 processRepo(db, argv.dir, argv.repo, artifactsDir, argv.imports, report).catch((e) => {
     console.error(e);
+    process.exit(1);
 })

@@ -1,6 +1,6 @@
 {
   "name": "@modelica/fmi-xc-scripts",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "A collection of scripts used in the validation of FMI cross-check data",
   "scripts": {
     "compile": "tsc",

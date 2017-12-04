@@ -7,7 +7,8 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "bin": {
-    "create_repo": "lib/scripts/create_repo.js"
+    "create_repo": "lib/scripts/create_repo.js",
+    "process_repo": "lib/scripts/process_repo.js"
   },
   "author": "Michael M. Tiller",
   "license": "MIT",

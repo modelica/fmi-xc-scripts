@@ -3,6 +3,7 @@
   "version": "0.2.3",
   "description": "A collection of scripts used in the validation of FMI cross-check data",
   "scripts": {
+    "prepublish": "tsc",
     "compile": "tsc",
     "test": "echo \"Error: no test specified\" && exit 1"
   },

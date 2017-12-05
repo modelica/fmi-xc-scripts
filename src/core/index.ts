@@ -1,3 +1,4 @@
+export * from './defaults';
 export * from './exports';
 export * from './extract';
 export * from './imports';

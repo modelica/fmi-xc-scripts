@@ -1,6 +1,7 @@
 var find = require('findit');
 var path = require('path');
-import { ExportDetails, SVN, Predicate } from './exports';
+import { SVN } from './defaults';
+import { ExportDetails, Predicate } from './exports';
 
 export const CrossChecks = path.join(SVN, "CrossCheck_Results");
 

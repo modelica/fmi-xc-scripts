@@ -1,7 +1,6 @@
 /**
  * This file contains various utility functions shared by other packages.
  */
-var find = require('findit');
 var ini = require('ini');
 
 import {
@@ -41,32 +40,6 @@ export type Reporter = (x: string, level: ReportLevel) => void;
 export function infoFiles(dir: string): string[] {
     let contents = fs.readdirSync(dir);
     return contents.filter((name) => name.endsWith("info"));
-}
-
-/**
- * A general purpose recursive file search function.
- * 
- * @param dir Directory to search (recursively)
- * @param predicate Used to test whether a given file matches the search criteria
- */
-export function findFiles(dir: string, predicate: (name: string) => boolean): Promise<string[]> {
-    return new Promise((resolve, reject) => {
-        let finder = find(dir, {});
-        let ret: string[] = [];
-
-        finder.on('file', (file: string) => {
-            if (predicate(file)) {
-                ret.push(file);
-            }
-        })
-        finder.on('error', (err: string) => {
-            reject(err);
-        })
-        finder.on('end', () => {
-            resolve(ret);
-        })
-    })
-
 }
 
 /**
@@ -158,25 +131,6 @@ export function parseInfo(filename: string, repo: string): ToolSummary {
         },
         repo: repo,
     }
-}
-
-/**
- * Divide an array into two separate arrays, one containing elements that satisfy a predicate and one containing
- * elements that do not.
- * 
- * @param array 
- * @param predicate 
- */
-export function partition<T>(array: Array<T>, predicate: (x: T) => boolean): { in: Array<T>, out: Array<T> } {
-    let ret: { in: Array<T>, out: Array<T> } = {
-        in: [],
-        out: [],
-    }
-    array.forEach((elem) => {
-        if (predicate(elem)) ret.in.push(elem);
-        else ret.out.push(elem);
-    })
-    return ret;
 }
 
 /**

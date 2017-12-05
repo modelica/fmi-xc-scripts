@@ -172,7 +172,7 @@ export function validateExport(local: string[]) {
             let names = local.join(", ");
             reporter(`Tool '${x.export_tool}' is not among list of tools defined in this repo: ${names}`, ReportLevel.Major);
         }
-        if (parseVersion(x.fmi) == null) reporter(`Unknown FMI version '${x.fmi}'`, ReportLevel.Major);
+        if (parseVersion(x.fmi_version) == null) reporter(`Unknown FMI version '${x.fmi_version}'`, ReportLevel.Major);
         if (parseVariant(x.variant) == null) reporter(`Unknown FMI variant '${x.variant}'`, ReportLevel.Major);
         if (parsePlatform(x.platform) == null) reporter(`Unknown FMI platform '${x.platform}'`, ReportLevel.Major);
         let requiredFiles = [
@@ -210,7 +210,7 @@ export function validateImport(local: string[], tools: string[]) {
         if (idx == -1) {
             reporter(`Export tool '${x.export_tool}' is not among the list of known FMI tools`, ReportLevel.Major);
         }
-        if (parseVersion(x.fmi) == null) reporter(`Unknown FMI version '${x.fmi}'`, ReportLevel.Major);
+        if (parseVersion(x.fmi_version) == null) reporter(`Unknown FMI version '${x.fmi_version}'`, ReportLevel.Major);
         if (parseVariant(x.variant) == null) reporter(`Unknown FMI variant '${x.variant}'`, ReportLevel.Major);
         if (parsePlatform(x.platform) == null) reporter(`Unknown FMI platform '${x.platform}'`, ReportLevel.Major);
         let passedFile = path.join(x.dir, "passed");
@@ -234,7 +234,7 @@ export function buildTable(imports: ImportDetails[], reporter: Reporter): CrossC
     // Loop over all imports
     utilDebug("Building cross-check result table");
     return imports.map((imp): CrossCheckResult => {
-        let version = parseVersion(imp.fmi); // TODO: change to ex.version
+        let version = parseVersion(imp.fmi_version); // TODO: change to ex.version
         let variant = parseVariant(imp.variant);
         let platform = parsePlatform(imp.platform);
         if (version == null || variant == null || platform == null) {

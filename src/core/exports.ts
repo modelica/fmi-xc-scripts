@@ -13,7 +13,7 @@ export interface ExportDetails {
     // The relative path to the specific FMU being described
     rel: string;
     // Version string for the version of FMI supported
-    fmi: string;
+    fmi_version: string;
     // FMI variant that the exported FMU supports
     variant: string;
     // Platform that the exported FMU targets
@@ -38,7 +38,7 @@ function parseExport(dir: string, rel: string, parts: string[]): ExportDetails {
     return {
         dir: dir,
         rel: rel,
-        fmi: parts[0],
+        fmi_version: parts[0],
         variant: parts[1],
         platform: parts[2],
         export_tool: parts[3],

@@ -1,5 +1,4 @@
 import { infoFiles, parseInfo, validate, validateExport, validateImport, buildTable, Reporter, ReportLevel } from './utils';
-//import { loadTools, pushTools, pushFMUs, pushCrossChecks } from './db/mongo';
 import { Database } from '../db';
 import { ToolSummary, FMUTable, parsePlatform, parseVariant, parseVersion, CrossCheckTable } from '@modelica/fmi-data';
 import { getExports } from './exports';
@@ -9,16 +8,29 @@ import * as path from 'path';
 import * as fs from 'fs';
 
 const stepsDebug = debug("extract:steps");
-//stepsDebug.enabled = true;
 const dataDebug = debug("extract:data");
-//dataDebug.enabled = true;
 
+/**
+ * This function is called by the process_repo script.  The purpose of this function is to
+ * extract information from vendor repositories, validate it against existing tools listed
+ * in a database, merge the vendor data into the existing data and, finally, push that
+ * merged data back into the database.
+ *  
+ * @param db Database instance to interact with
+ * @param dir Directory to process
+ * @param repo A URL for the repository being procesed (i.e., the git URL for the repo0)
+ * @param artifactsDir Where to place artifacts generated as part of this process
+ * @param imports Whether to include processing of imported FMUs
+ * @param report A means to report issues during processing.
+ */
 export async function processRepo(db: Database, dir: string, repo: string, artifactsDir: string, imports: boolean, report: Reporter) {
     // Read external tools database
     stepsDebug("Processing repo %s located in '%s'", repo, dir);
     stepsDebug("  Artifacts directory: %s", artifactsDir);
     stepsDebug("  Process imports: %j", imports);
     stepsDebug("Loading external tools");
+
+    // Extract any existing tools in the database
     let existing = await db.loadTools(artifactsDir);
 
     // Build a map that maps the tool name to it's details (checking for duplicates)
@@ -45,10 +57,13 @@ export async function processRepo(db: Database, dir: string, repo: string, artif
         local.push(config.id);
     });
 
-    // Process exports
+    // Process exports by searching the Test_FMUs directory
     //   Find all directories of appropriate length
     try {
+        // TODO: Make this a constant
         let fmuDir = path.join(dir, "Test_FMUs");
+
+        // If there is a directory for exported FMUs...
         if (fs.existsSync(fmuDir)) {
             let allExports = await getExports(fmuDir);
             dataDebug("All export directories: %o", allExports);
@@ -56,7 +71,7 @@ export async function processRepo(db: Database, dir: string, repo: string, artif
             dataDebug("Validated export directories: %o", exports);
             //   Build FMUTable
             let fmus: FMUTable = exports.map((ex) => {
-                let version = parseVersion(ex.fmi); // TODO: change to ex.version
+                let version = parseVersion(ex.fmi_version); // TODO: change to ex.version
                 let variant = parseVariant(ex.variant);
                 let platform = parsePlatform(ex.platform);
                 if (version == null || variant == null || platform == null) {
@@ -79,6 +94,8 @@ export async function processRepo(db: Database, dir: string, repo: string, artif
         report("Error while processing exports in " + dir + ": " + e.message, ReportLevel.Fatal);
     }
 
+    // Now check for cross check results
+    // TODO: Make this a constant
     let xcdir = path.join(dir, "CrossCheck_Results");
     if (imports && fs.existsSync(xcdir)) {
         try {
@@ -102,7 +119,6 @@ export async function processRepo(db: Database, dir: string, repo: string, artif
     }
 
     // Write out: tools.json (ToolsTable)
-    // TODO: We could write this earlier if we ditch the platforms stuff
     await db.pushTools(toolMap, local, artifactsDir);
 }
 

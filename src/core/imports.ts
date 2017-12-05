@@ -14,7 +14,7 @@ function parseImport(dir: string, rel: string, parts: string[]): ImportDetails {
     return {
         dir: dir,
         rel: rel,
-        fmi: parts[0],
+        fmi_version: parts[0],
         variant: parts[1],
         platform: parts[2],
         import_tool: parts[3],

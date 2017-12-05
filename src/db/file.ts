@@ -6,6 +6,11 @@ import * as path from 'path';
 import * as debug from 'debug';
 const fileDebug = debug('fmi:db');
 
+/**
+ * An implementation of the Database interface that uses JSON files
+ * on the file system as the means to achieve persistence.  This is
+ * really note used in any serious way except for testing.
+ */
 export class FileSystemDatabase implements Database {
     async loadTools(artifacts: string): Promise<ToolsTable> {
         try {

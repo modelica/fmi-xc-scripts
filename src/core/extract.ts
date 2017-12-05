@@ -3,6 +3,7 @@ import { Database } from '../db';
 import { ToolSummary, FMUTable, parsePlatform, parseVariant, parseVersion, CrossCheckTable } from '@modelica/fmi-data';
 import { getExports } from './exports';
 import { getImports } from './imports';
+import { exportDir, crossCheckDir } from './defaults';
 import * as debug from 'debug';
 import * as path from 'path';
 import * as fs from 'fs';
@@ -57,11 +58,10 @@ export async function processRepo(db: Database, dir: string, repo: string, artif
         local.push(config.id);
     });
 
-    // Process exports by searching the Test_FMUs directory
+    // Process exports by searching the exports directory (see `exportDir` constant)
     //   Find all directories of appropriate length
     try {
-        // TODO: Make this a constant
-        let fmuDir = path.join(dir, "Test_FMUs");
+        let fmuDir = path.join(dir, exportDir);
 
         // If there is a directory for exported FMUs...
         if (fs.existsSync(fmuDir)) {
@@ -95,8 +95,7 @@ export async function processRepo(db: Database, dir: string, repo: string, artif
     }
 
     // Now check for cross check results
-    // TODO: Make this a constant
-    let xcdir = path.join(dir, "CrossCheck_Results");
+    let xcdir = path.join(dir, crossCheckDir);
     if (imports && fs.existsSync(xcdir)) {
         try {
             stepsDebug("Processing cross-check data");

@@ -2,6 +2,7 @@ import * as path from 'path';
 import * as fs from 'fs-extra';
 import { getExports } from './exports';
 import { getImports } from './imports';
+import { exportDir } from './defaults';
 import { Reporter, ReportLevel } from './utils';
 
 import * as debug from 'debug';
@@ -9,6 +10,8 @@ const createDebug = debug("extract:create-repo");
 // createDebug.enabled = true;
 
 export async function createRepo(tool: string, repo: string, root: string, report: Reporter) {
+    // Determine where FMUs and cross check results are stored based on **legacy** SVN
+    // repository structure.
     let FMUs = path.join(root, "Test_FMUs");
     let crossChecks = path.join(root, "CrossCheck_Results");
     console.log("Creating repository for " + tool);
@@ -29,7 +32,7 @@ export async function createRepo(tool: string, repo: string, root: string, repor
         let edetails = await getExports(FMUs, (d) => d.export_tool == tool);
         edetails.forEach((match, index) => {
             let from = path.join(match.dir);
-            let to = path.join(repo, "Test_FMUs", match.rel);
+            let to = path.join(repo, exportDir, match.rel);
 
             let per = (100 * index / edetails.length).toFixed(0);
             process.stdout.write(` [${per}%] \r`);

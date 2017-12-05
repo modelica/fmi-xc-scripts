@@ -2,14 +2,14 @@
 
 import * as yargs from 'yargs';
 import * as path from 'path';
-import { SVN, infoFiles, reporter, ReportLevel, createRepo, processRepo } from '../core';
+import { infoFiles, reporter, ReportLevel, createRepo, processRepo } from '../core';
 import { createDatabase } from '../db';
 
 const argv = yargs
     .string('repodir')
     .default('repodir', null)
     .string('root')
-    .default('root', SVN)
+    .default('root', null)
     .string('db')
     .default('db', 'github')
     .boolean('create')

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import * as yargs from 'yargs';
-import { SVN, createRepo, reporter, ReportLevel } from '../core';
+import { createRepo, reporter, ReportLevel } from '../core';
 
 let argv = yargs
     .string('tool')
@@ -9,7 +9,7 @@ let argv = yargs
     .string('repo')
     .default('repo', null)
     .string('root')
-    .default('root', SVN)
+    .default('root', null)
     .number('pedantic')
     .default('pedantic', true)
     .argv;

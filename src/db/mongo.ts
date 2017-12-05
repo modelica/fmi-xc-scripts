@@ -6,7 +6,6 @@ import * as mongodb from 'mongodb';
 
 import * as debug from 'debug';
 const mongoDebug = debug('fmi:db');
-// mongoDebug.enabled = true;
 
 async function mongoConnect(): Promise<mongodb.Db | null> {
     let url = process.env["MONGO_XC"];

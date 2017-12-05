@@ -5,7 +5,6 @@ import * as path from 'path';
 
 import * as debug from 'debug';
 const fileDebug = debug('fmi:db');
-// fileDebug.enabled = true;
 
 export class FileSystemDatabase implements Database {
     async loadTools(artifacts: string): Promise<ToolsTable> {

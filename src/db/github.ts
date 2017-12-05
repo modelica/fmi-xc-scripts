@@ -7,7 +7,6 @@ import { AxiosRequestConfig } from 'axios';
 
 import * as debug from 'debug';
 const githubDebug = debug('fmi:github');
-// githubDebug.enabled = true;
 
 function getContentsURL(file: string) {
     return `https://api.github.com/repos/modelica/fmi-standard.org/contents/${file}`

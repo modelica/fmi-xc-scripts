@@ -16,7 +16,6 @@ import * as path from 'path';
 
 import * as debug from 'debug';
 const utilDebug = debug('utils');
-// utilDebug.enabled = true;
 
 /**
  * Establishes a "level" for flagging concerns while processing.

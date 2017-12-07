@@ -12,12 +12,14 @@ let argv = yargs
     .default('dir', null)
     .string('db')
     .default('db', 'github')
-    .string('repo')
-    .default('repo', null)
+    .string('repouri')
+    .default('repouri', null)
     .boolean('imports')
     .default('imports', true)
     .boolean('pedatic')
     .default('pedantic', true)
+    .boolean('moved')
+    .default('moved', false)
     .argv;
 
 if (!argv.dir) {
@@ -25,8 +27,8 @@ if (!argv.dir) {
     process.exit(1);
 }
 
-if (!argv.repo) {
-    console.error("Must specify a repository URL");
+if (!argv.repouri) {
+    console.error("Must specify a repository URL using --repouri");
     process.exit(1);
 }
 
@@ -39,7 +41,7 @@ if (argv.pedantic) {
 let report = reporter(min);
 let db = createDatabase(argv.db);
 
-processRepo(db, argv.dir, argv.repo, artifactsDir, argv.imports, report).catch((e) => {
+processRepo(db, argv.dir, argv.repouri, artifactsDir, argv.imports, argv.moved, report).catch((e) => {
     console.error(e);
     process.exit(1);
 })

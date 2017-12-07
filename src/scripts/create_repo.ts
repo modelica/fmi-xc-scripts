@@ -2,12 +2,21 @@
 
 import * as yargs from 'yargs';
 import { createRepo, reporter, ReportLevel } from '../core';
+import { VendorDetails } from '@modelica/fmi-data';
 
 let argv = yargs
+    .string('vendor')
+    .default('vendor', null)
     .string('tool')
     .default('tool', null)
     .string('repo')
     .default('repo', null)
+    .string('repouri')
+    .default('repouri', null)
+    .string('email')
+    .default('email', null)
+    .string('href')
+    .default('href', null)
     .string('root')
     .default('root', null)
     .number('pedantic')
@@ -21,11 +30,39 @@ if (!argv.repo) {
 
 let report = reporter(argv.pedantic ? ReportLevel.Minor : ReportLevel.Major);
 
-if (argv.tool) {
-    createRepo(argv.tool, argv.repo, argv.root, report).catch((e) => {
-        console.error(e);
-    })
-} else {
+if (!argv.tool) {
     console.error("No value provided for --tool");
     process.exit(1);
 }
+
+if (!argv.vendor) {
+    console.error("No value provided for --vendor");
+    process.exit(2);
+}
+
+if (!argv.repo) {
+    console.error("No value provided for --repo");
+    process.exit(3);
+}
+
+if (!argv.root) {
+    console.error("No value provided for --root");
+    process.exit(3);
+}
+
+if (!argv.repouri) {
+    console.error("No value provided for --repouri");
+    process.exit(4);
+}
+
+let vendor: VendorDetails = {
+    id: argv.vendor,
+    displayName: argv.vendor,
+    href: argv.href || "",
+    email: argv.email || "",
+    repo: argv.repouri,
+}
+
+createRepo(vendor, argv.tool, argv.repo, argv.root, report).catch((e) => {
+    console.error(e);
+})

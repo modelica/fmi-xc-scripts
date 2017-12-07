@@ -92,9 +92,9 @@ function parseStatus(field: string, obj: { [key: string]: string }): VariantSupp
  * Build ToolSummary data from information contained in the .info file
  * 
  * @param filename .info file to read
- * @param repo Repository associated with this tool
+ * @param repoUri Repository associated with this tool
  */
-export function parseInfo(filename: string, repo: string): ToolSummary {
+export function parseInfo(filename: string, repoUri: string): ToolSummary {
     let contents = fs.readFileSync(filename, 'utf-8');
     let obj = ini.parse(contents);
 
@@ -113,8 +113,8 @@ export function parseInfo(filename: string, repo: string): ToolSummary {
     return {
         id: toolId,
         displayName: obj["name"],
-        homepage: obj["href"],
-        email: obj["email"],
+        homepage: obj["href"] || "",
+        email: obj["email"] || "",
         note: obj["note"] || "",
         fmi1: {
             import: parseStatus("import_me", obj),
@@ -128,7 +128,7 @@ export function parseInfo(filename: string, repo: string): ToolSummary {
             slave: parseStatus("slave_cs_20", obj),
             master: parseStatus("master_cs_20", obj),
         },
-        repo: repo,
+        repo: repoUri,
     }
 }
 

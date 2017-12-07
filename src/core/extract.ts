@@ -24,7 +24,7 @@ const dataDebug = debug("extract:data");
  * @param imports Whether to include processing of imported FMUs
  * @param report A means to report issues during processing.
  */
-export async function processRepo(db: Database, dir: string, repo: string, artifactsDir: string, imports: boolean, report: Reporter) {
+export async function processRepo(db: Database, dir: string, repo: string, artifactsDir: string, imports: boolean, moved: boolean, report: Reporter) {
     // Read external tools database
     stepsDebug("Processing repo %s located in '%s'", repo, dir);
     stepsDebug("  Artifacts directory: %s", artifactsDir);
@@ -52,7 +52,7 @@ export async function processRepo(db: Database, dir: string, repo: string, artif
         let config = parseInfo(path.join(dir, toolFile), repo);
         dataDebug("Loaded the following tool configuration data: %o", config);
         let exists = toolMap.get(config.id);
-        if (exists && exists.repo != repo) throw new Error(`This repo (at ${repo}) defines tool '${config.id}' which was already defined in repo ${exists.repo}`);
+        if (exists && exists.repo != repo && !moved) throw new Error(`This repo (at ${repo}) defines tool '${config.id}' which was already defined in repo ${exists.repo}`);
         stepsDebug("Adding tool '%s' to tool map", config.id);
         toolMap.set(config.id, config);
         local.push(config.id);

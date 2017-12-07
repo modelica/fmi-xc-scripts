@@ -4,8 +4,11 @@ import { getExports } from './exports';
 import { getImports } from './imports';
 import { exportDir } from './defaults';
 import { Reporter, ReportLevel } from './utils';
+import { VendorDetails } from '@modelica/fmi-data';
 
 import * as debug from 'debug';
+import * as ini from 'ini';
+
 const createDebug = debug("extract:create-repo");
 
 /**
@@ -17,12 +20,23 @@ const createDebug = debug("extract:create-repo");
  * @param root Root of the legacy SVN file structure
  * @param report A means for reporting issues
  */
-export async function createRepo(tool: string, repo: string, root: string, report: Reporter) {
+export async function createRepo(vendor: VendorDetails, tool: string, repo: string, root: string, report: Reporter) {
     // Determine where FMUs and cross check results are stored based on **legacy** SVN
     // repository structure.
     let FMUs = path.join(root, "Test_FMUs");
     let crossChecks = path.join(root, "CrossCheck_Results");
-    console.log("Creating repository for " + tool);
+
+    if (!fs.existsSync(repo)) {
+        console.log("Creating directory " + repo);
+        fs.mkdirpSync(repo);
+    } else {
+        console.log("Directory " + repo + " already exists");
+    }
+    console.log("Adding to " + tool + " to repository for vendor " + vendor.id + " at " + repo);
+
+    // Write vendor data file
+    let vendorFile = path.join(repo, "vendor.ini");
+    fs.writeFileSync(vendorFile, ini.stringify(vendor));
 
     // Find the .info file for this tool and copy it into the vender repository
     createDebug("Look for tool '%s'", tool);

@@ -17,11 +17,15 @@ const xcFile = "_data/xc_results.json";
  * the FMI web site repository) as a persistence layer.
  */
 export class GithubDatabase implements Database {
+    private tools: Promise<ToolsTable> | null;
     async loadTools(_artifacts: string): Promise<ToolsTable> {
+        if (this.tools) this.tools;
+
         githubDebug("Loading tools from GitHub");
 
+        this.tools = readFile<ToolsTable>(toolsFile, "reading tools.json")
         // Tools data is loaded from GitHub
-        let table = await readFile<ToolsTable>(toolsFile, "reading tools.json");
+        let table = await this.tools;
         if (Array.isArray(table)) {
             githubDebug("  Table contains %d tools", table.length);
             return table;

@@ -2,9 +2,9 @@
 # yarn lockfile v1
 
 
-"@modelica/fmi-data@^0.6.1":
-  version "0.6.1"
-  resolved "https://registry.npmjs.org/@modelica/fmi-data/-/fmi-data-0.6.1.tgz#6efcdc320028858fd788699cb3860c598376ec14"
+"@modelica/fmi-data@0.7.0":
+  version "0.7.0"
+  resolved "https://registry.npmjs.org/@modelica/fmi-data/-/fmi-data-0.7.0.tgz#ed1eeddcb07950d168d2753117c6d614dbaf55d5"
   dependencies:
     typescript "^2.6.2"
 

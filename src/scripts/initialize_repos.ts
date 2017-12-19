@@ -52,8 +52,10 @@ function vendorInfo(file: string): VendorDetails {
         repo: repo,
     };
 }
+
+let report = reporter(argv.pedantic ? ReportLevel.Minor : ReportLevel.Major);
+
 async function run() {
-    let report = reporter(argv.pedantic ? ReportLevel.Minor : ReportLevel.Major);
     let files = await infoFiles(path.join(argv.root, "tools"));
     initDebug("Info files: %j", files);
     let db = createDatabase(argv.db);
@@ -64,13 +66,13 @@ async function run() {
         let rdir = path.join(argv.repodir, vendor.vendorId);
         if (argv.create) {
             console.log(`Create repo for tool ${toolname} in ${rdir} pulling data from ${argv.root}`);
-            await createRepo(vendor, toolname, rdir, argv.root, report);
+            await createRepo(vendor, toolname, rdir, argv.root, report.reporter);
         }
         if (argv.process) {
             try {
                 console.log(`  Processing tool data in repo for vendor ${vendor}`);
                 let artifactsDir = path.join(rdir, "artifacts");
-                await processRepo(db, rdir, vendor.repo, artifactsDir, false, true, report);
+                await processRepo(db, rdir, vendor.repo, artifactsDir, false, true, report.reporter);
             } catch (e) {
                 console.error("Error while processing vendor " + vendor + ": ", e.message);
             }
@@ -84,7 +86,7 @@ async function run() {
             try {
                 console.log(`  Processing import data in repo for tool ${toolname}`);
                 let artifactsDir = path.join(rdir, "artifacts");
-                await processRepo(db, rdir, vendor.repo, artifactsDir, true, true, report);
+                await processRepo(db, rdir, vendor.repo, artifactsDir, true, true, report.reporter);
             } catch (e) {
                 console.error("Error while processing tool " + toolname + ": ", e.message);
             }
@@ -92,7 +94,9 @@ async function run() {
     }
 }
 
-run().catch((e) => {
-    console.error(e);
+run().then(() => {
+    process.exit(report.numErrors());
+}).catch((e) => {
+    console.error("initializeRepo failed: " + e.message);
     process.exit(1);
 });

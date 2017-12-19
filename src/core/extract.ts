@@ -110,7 +110,6 @@ export async function processRepo(db: Database, dir: string, vendorId: string, a
             await db.pushCrossChecks(xc, local, artifactsDir);
         } catch (e) {
             report("Error while processing imports in " + dir + ": " + e.message, ReportLevel.Fatal);
-            console.log(e);
         }
     } else {
         if (fs.existsSync(xcdir)) stepsDebug("Skipping import data");

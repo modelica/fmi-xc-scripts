@@ -85,6 +85,5 @@ export async function createRepo(vendor: VendorDetails, tool: string, repo: stri
         });
     } catch (e) {
         report("Error while extracting import directories for " + tool + ": " + e.message, ReportLevel.Fatal);
-        console.log(e);
     }
 }

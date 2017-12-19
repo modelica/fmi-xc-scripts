@@ -39,15 +39,15 @@ let db = createDatabase(argv.db);
 let inifile = path.join(argv.dir, "vendor.ini")
 let contents = fs.readFileSync(inifile, 'utf-8');
 let obj = ini.parse(contents);
-console.log("obj = ", obj);
 if (!obj["vendorId"]) {
     console.error("No 'vendorId' variable found in " + inifile);
     process.exit(3);
 }
 let vendor = obj["vendorId"];
-console.log("vendor = ", vendor);
 
-processRepo(db, argv.dir, vendor, artifactsDir, argv.imports, argv.moved, report).catch((e) => {
-    console.error(e);
+processRepo(db, argv.dir, vendor, artifactsDir, argv.imports, argv.moved, report.reporter).then(() => {
+    process.exit(report.numErrors());
+}).catch((e) => {
+    console.error("procesRepo failed: " + e.message);
     process.exit(1);
-})
+});

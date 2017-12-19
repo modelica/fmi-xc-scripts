@@ -63,6 +63,9 @@ let vendor: VendorDetails = {
     repo: argv.repouri,
 }
 
-createRepo(vendor, argv.tool, argv.repo, argv.root, report).catch((e) => {
-    console.error(e);
+createRepo(vendor, argv.tool, argv.repo, argv.root, report.reporter).then(() => {
+    process.exit(report.numErrors());
+}).catch((e) => {
+    console.error("createRepo failed: " + e.message);
+    process.exit(1);
 })

@@ -276,11 +276,23 @@ function parseResult(dir: string, reporter: Reporter): CrossCheckStatus {
  */
 export function reporter(min: ReportLevel) {
     let reported = new Set<string>();
-    return (msg: string, level: ReportLevel) => {
+    let numErrors = 0;
+    let reporter: Reporter = (msg: string, level: ReportLevel) => {
         if (reported.has(msg)) return;
         if (level >= min) {
             reported.add(msg);
-            console.warn("WARNING: " + msg);
+            if (level >= ReportLevel.Fatal) {
+                console.error("ERROR: " + msg);
+            } else {
+                console.warn("WARNING: " + msg);
+            }
         }
+        if (level >= ReportLevel.Fatal) {
+            numErrors++;
+        }
+    }
+    return {
+        reporter: reporter,
+        numErrors: () => numErrors,
     }
 }

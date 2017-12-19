@@ -56,7 +56,7 @@ if (!argv.repouri) {
 }
 
 let vendor: VendorDetails = {
-    id: argv.vendor,
+    vendorId: argv.vendor,
     displayName: argv.vendor,
     href: argv.href || "",
     email: argv.email || "",

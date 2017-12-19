@@ -45,7 +45,7 @@ function vendorInfo(file: string): VendorDetails {
     initDebug("  Repository: %s", repo);
 
     return {
-        id: vendor,
+        vendorId: vendor,
         displayName: vendor,
         href: obj["Tool"]["href"],
         email: obj["Tool"]["email"],
@@ -61,7 +61,7 @@ async function run() {
         let toolname = file.replace(".info", "");
         let vendor = vendorInfo(file);
 
-        let rdir = path.join(argv.repodir, vendor.id);
+        let rdir = path.join(argv.repodir, vendor.vendorId);
         if (argv.create) {
             console.log(`Create repo for tool ${toolname} in ${rdir} pulling data from ${argv.root}`);
             await createRepo(vendor, toolname, rdir, argv.root, report);

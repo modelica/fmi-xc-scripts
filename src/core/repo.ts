@@ -32,7 +32,7 @@ export async function createRepo(vendor: VendorDetails, tool: string, repo: stri
     } else {
         console.log("Directory " + repo + " already exists");
     }
-    console.log("Adding to " + tool + " to repository for vendor " + vendor.id + " at " + repo);
+    console.log("Adding to " + tool + " to repository for vendor " + vendor.vendorId + " at " + repo);
 
     // Write vendor data file
     let vendorFile = path.join(repo, "vendor.ini");

@@ -19,14 +19,14 @@ const dataDebug = debug("extract:data");
  *  
  * @param db Database instance to interact with
  * @param dir Directory to process
- * @param repo A URL for the repository being procesed (i.e., the git URL for the repo0)
+ * @param vendorId The id of the vendor we are processing
  * @param artifactsDir Where to place artifacts generated as part of this process
  * @param imports Whether to include processing of imported FMUs
  * @param report A means to report issues during processing.
  */
-export async function processRepo(db: Database, dir: string, repo: string, artifactsDir: string | null, imports: boolean, moved: boolean, report: Reporter) {
+export async function processRepo(db: Database, dir: string, vendorId: string, artifactsDir: string | null, imports: boolean, moved: boolean, report: Reporter) {
     // Read external tools database
-    stepsDebug("Processing repo %s located in '%s'", repo, dir);
+    stepsDebug("Processing repo in %s owned by %s", dir, vendorId);
     stepsDebug("  Artifacts directory: %s", artifactsDir);
     stepsDebug("  Process imports: %j", imports);
     stepsDebug("Loading external tools");
@@ -49,10 +49,10 @@ export async function processRepo(db: Database, dir: string, repo: string, artif
     let local: string[] = [];
     stepsDebug("Info files found: %j", tools);
     tools.forEach((toolFile) => {
-        let config = parseInfo(path.join(dir, toolFile), repo);
+        let config = parseInfo(path.join(dir, toolFile), vendorId);
         dataDebug("Loaded the following tool configuration data: %o", config);
         let exists = toolMap.get(config.id);
-        if (exists && exists.repo != repo && !moved) throw new Error(`This repo (at ${repo}) defines tool '${config.id}' which was already defined in repo ${exists.repo}`);
+        if (exists && exists.vendorId != vendorId && !moved) throw new Error(`This repo (owned by ${vendorId}) defines tool '${config.id}' which was already owned by ${exists.vendorId}`);
         stepsDebug("Adding tool '%s' to tool map", config.id);
         toolMap.set(config.id, config);
         local.push(config.id);

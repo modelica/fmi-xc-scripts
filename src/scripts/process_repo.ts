@@ -4,16 +4,16 @@ import * as yargs from 'yargs';
 import * as path from 'path';
 import { processRepo, reporter, ReportLevel } from '../core';
 import { createDatabase } from '../db';
+var ini = require('ini');
+var fs = require('fs');
 
 let argv = yargs
     .string('artifacts')
     .default('artifacts', null)
     .string('dir')
-    .default('dir', null)
+    .default('dir', ".")
     .string('db')
     .default('db', 'github')
-    .string('repouri')
-    .default('repouri', null)
     .boolean('imports')
     .default('imports', true)
     .boolean('pedatic')
@@ -27,11 +27,6 @@ if (!argv.dir) {
     process.exit(1);
 }
 
-if (!argv.repouri) {
-    console.error("Must specify a repository URL using --repouri");
-    process.exit(1);
-}
-
 let artifactsDir = argv.artifacts ? path.join(argv.dir, argv.artifacts) : null;
 let min = ReportLevel.Minor;
 
@@ -41,7 +36,18 @@ if (argv.pedantic) {
 let report = reporter(min);
 let db = createDatabase(argv.db);
 
-processRepo(db, argv.dir, argv.repouri, artifactsDir, argv.imports, argv.moved, report).catch((e) => {
+let inifile = path.join(argv.dir, "vendor.ini")
+let contents = fs.readFileSync(inifile, 'utf-8');
+let obj = ini.parse(contents);
+console.log("obj = ", obj);
+if (!obj["vendorId"]) {
+    console.error("No 'vendorId' variable found in " + inifile);
+    process.exit(3);
+}
+let vendor = obj["vendorId"];
+console.log("vendor = ", vendor);
+
+processRepo(db, argv.dir, vendor, artifactsDir, argv.imports, argv.moved, report).catch((e) => {
     console.error(e);
     process.exit(1);
 })

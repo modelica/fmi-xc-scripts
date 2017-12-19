@@ -12,36 +12,57 @@ const fileDebug = debug('fmi:db');
  * really note used in any serious way except for testing.
  */
 export class FileSystemDatabase implements Database {
-    async loadTools(artifacts: string): Promise<ToolsTable> {
+    async loadTools(artifacts: string | null): Promise<ToolsTable> {
         try {
             fileDebug("Loading tools from file");
-            return await fs.readJSON(path.join(artifacts, "tools.json"));
+            if (artifacts) {
+                let toolsfile = path.join(artifacts, "tools.json");
+                fileDebug("Loading existing tools from artifact directory: %s", toolsfile);
+                return await fs.readJSON(toolsfile);
+            } else {
+                fileDebug("No artifacts directory specified, assuming no pre-existing data on tools to load");
+                return [];
+            }
         } catch (e) {
             return [];
         }
     }
 
-    async pushTools(toolMap: Map<string, ToolSummary>, _locals: string[], artifacts: string): Promise<void> {
+    async pushTools(toolMap: Map<string, ToolSummary>, _locals: string[], artifacts: string | null): Promise<void> {
         let table: ToolsTable = Array.from(toolMap.values());
         fileDebug("Pushing data about %d tools: ", table.length);
 
-        fs.mkdirpSync(artifacts);
-        let artifactsDir = path.join(artifacts, "tools.json");
-        fs.writeFileSync(artifactsDir, JSON.stringify(table, null, 4));
-        fileDebug("  Artifacts file for tools written to: %s", artifactsDir);
+        if (artifacts) {
+            fs.mkdirpSync(artifacts);
+            let artifactsDir = path.join(artifacts, "tools.json");
+            fs.writeFileSync(artifactsDir, JSON.stringify(table, null, 4));
+            fileDebug("  Artifacts file for tools written to: %s", artifactsDir);
+        } else {
+            fileDebug("  No artifacts directory specified, cannot write tools.json");
+        }
     }
 
-    async pushFMUs(fmus: FMUTable, _local: string[], artifacts: string): Promise<void> {
+    async pushFMUs(fmus: FMUTable, _local: string[], artifacts: string | null): Promise<void> {
         fileDebug("Pushing data about %d FMUs: ", fmus.length);
 
-        fs.mkdirpSync(artifacts);
-        fs.writeFileSync(path.join(artifacts, "fmus.json"), JSON.stringify(fmus, null, 4));
+        if (artifacts) {
+            fileDebug("  Writing fmus.json file in %s", artifacts);
+            fs.mkdirpSync(artifacts);
+            fs.writeFileSync(path.join(artifacts, "fmus.json"), JSON.stringify(fmus, null, 4));
+        } else {
+            fileDebug("  No artifacts directory specified, cannot write fmus.json");
+        }
     }
 
-    async  pushCrossChecks(xc: CrossCheckTable, _local: string[], artifacts: string): Promise<void> {
+    async  pushCrossChecks(xc: CrossCheckTable, _local: string[], artifacts: string | null): Promise<void> {
         fileDebug("Pushing data about %d cross check results: ", xc.length);
 
-        fs.mkdirpSync(artifacts);
-        fs.writeFileSync(path.join(artifacts, "xc_results.json"), JSON.stringify(xc, null, 4));
+        if (artifacts) {
+            fileDebug("  Writing xc_results.json in %s", artifacts);
+            fs.mkdirpSync(artifacts);
+            fs.writeFileSync(path.join(artifacts, "xc_results.json"), JSON.stringify(xc, null, 4));
+        } else {
+            fileDebug("  No artifacts directory specified, cannot write xc_results.json");
+        }
     }
 }

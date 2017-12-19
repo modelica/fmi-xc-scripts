@@ -7,7 +7,7 @@ import { createDatabase } from '../db';
 
 let argv = yargs
     .string('artifacts')
-    .default('artifacts', 'artifacts')
+    .default('artifacts', null)
     .string('dir')
     .default('dir', null)
     .string('db')
@@ -32,7 +32,7 @@ if (!argv.repouri) {
     process.exit(1);
 }
 
-let artifactsDir = path.join(argv.dir, argv.artifacts);
+let artifactsDir = argv.artifacts ? path.join(argv.dir, argv.artifacts) : null;
 let min = ReportLevel.Minor;
 
 if (argv.pedantic) {

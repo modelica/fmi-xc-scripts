@@ -24,7 +24,7 @@ const dataDebug = debug("extract:data");
  * @param imports Whether to include processing of imported FMUs
  * @param report A means to report issues during processing.
  */
-export async function processRepo(db: Database, dir: string, repo: string, artifactsDir: string, imports: boolean, moved: boolean, report: Reporter) {
+export async function processRepo(db: Database, dir: string, repo: string, artifactsDir: string | null, imports: boolean, moved: boolean, report: Reporter) {
     // Read external tools database
     stepsDebug("Processing repo %s located in '%s'", repo, dir);
     stepsDebug("  Artifacts directory: %s", artifactsDir);

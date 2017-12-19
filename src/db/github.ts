@@ -18,7 +18,7 @@ const xcFile = "_data/xc_results.json";
  */
 export class GithubDatabase implements Database {
     private tools: Promise<ToolsTable> | null;
-    async loadTools(_artifacts: string): Promise<ToolsTable> {
+    async loadTools(_artifacts: string | null): Promise<ToolsTable> {
         if (this.tools) this.tools;
 
         githubDebug("Loading tools from GitHub");
@@ -33,15 +33,19 @@ export class GithubDatabase implements Database {
         throw new Error("Expected table data to be an array, but got: " + JSON.stringify(table));
     }
 
-    async pushTools(toolMap: Map<string, ToolSummary>, locals: string[], artifacts: string): Promise<void> {
+    async pushTools(toolMap: Map<string, ToolSummary>, locals: string[], artifacts: string | null): Promise<void> {
         let table: ToolsTable = Array.from(toolMap.values());
         githubDebug("Pushing data about %d tools: ", table.length);
 
         // Write out updated tools data first as artifacts on the file system (used only for debugging)
-        fs.mkdirpSync(artifacts);
-        let artifactsDir = path.join(artifacts, "tools.json");
-        fs.writeFileSync(artifactsDir, JSON.stringify(table, null, 4));
-        githubDebug("  Artifacts file for tools written to: %s", artifactsDir);
+        if (artifacts) {
+            fs.mkdirpSync(artifacts);
+            let artifactsDir = path.join(artifacts, "tools.json");
+            fs.writeFileSync(artifactsDir, JSON.stringify(table, null, 4));
+            githubDebug("  Artifacts file for tools written to: %s", artifacts);
+        } else {
+            githubDebug("  No artifacts directory provided, skipping writing tools.json");
+        }
 
         // Check if we have a GitHub OAUTH token.  If not, we cannot write.
         let token = process.env["GITHUB_TOKEN"];
@@ -77,7 +81,7 @@ export class GithubDatabase implements Database {
         githubDebug("  Tool data written back to GitHub");
     }
 
-    async pushFMUs(fmus: FMUTable, local: string[], artifacts: string): Promise<void> {
+    async pushFMUs(fmus: FMUTable, local: string[], artifacts: string | null): Promise<void> {
         githubDebug("Pushing data about %d FMUs: ", fmus.length);
 
         // Check if we have a GitHub OAUTH token.  If not, we can't do anything here
@@ -88,9 +92,14 @@ export class GithubDatabase implements Database {
             return;
         }
 
-        // Write artifacts to disk (used just for debugging)
-        fs.mkdirpSync(artifacts);
-        fs.writeFileSync(path.join(artifacts, "fmus.json"), JSON.stringify(fmus, null, 4));
+        if (artifacts) {
+            // Write artifacts to disk (used just for debugging)
+            fs.mkdirpSync(artifacts);
+            fs.writeFileSync(path.join(artifacts, "fmus.json"), JSON.stringify(fmus, null, 4));
+            githubDebug("  Artifacts file for fmus written to: %s", artifacts);
+        } else {
+            githubDebug("  No artifacts directory provided, skipping writing fmus.json");
+        }
 
         // Get current list of fmus
         let table = await readFile<FMUTable>(fmusFile, "push of fmus.json");
@@ -110,11 +119,17 @@ export class GithubDatabase implements Database {
         return;
     }
 
-    async pushCrossChecks(xc: CrossCheckTable, local: string[], artifacts: string): Promise<void> {
+    async pushCrossChecks(xc: CrossCheckTable, local: string[], artifacts: string | null): Promise<void> {
         githubDebug("Pushing data about %d cross check results: ", xc.length);
 
-        fs.mkdirpSync(artifacts);
-        fs.writeFileSync(path.join(artifacts, "xc_results.json"), JSON.stringify(xc, null, 4));
+        if (artifacts) {
+            fs.mkdirpSync(artifacts);
+            fs.writeFileSync(path.join(artifacts, "xc_results.json"), JSON.stringify(xc, null, 4));
+            githubDebug("  Artifacts file for cross-check results written to: %s", artifacts);
+        } else {
+            githubDebug("  No artifacts directory provided, skipping writing tools.json");
+
+        }
 
         let token = process.env["GITHUB_TOKEN"];
         if (!token) {
@@ -148,7 +163,7 @@ function getContentsURL(file: string) {
 }
 
 // Enable big file support
-const big = false;
+const big = true;
 
 // Read a file from GitHub (via API, using tokens if available)
 async function readFile<T extends {}>(file: string, during: string): Promise<T> {

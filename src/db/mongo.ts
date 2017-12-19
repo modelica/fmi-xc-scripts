@@ -16,8 +16,7 @@ async function mongoConnect(): Promise<mongodb.Db | null> {
 }
 
 export class MongoDatabase implements Database {
-
-    async loadTools(_artifacts: string): Promise<ToolsTable> {
+    async loadTools(_artifacts: string | null): Promise<ToolsTable> {
         mongoDebug("Loading tools from Mongo");
         let db = await mongoConnect();
         if (!db) {

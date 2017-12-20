@@ -7,7 +7,6 @@ import { ToolsTable, FMUTable, CrossCheckTable } from '@modelica/fmi-data';
  */
 export interface Database {
     open(): Promise<void>;
-    loadTools(): Promise<ToolsTable>;
     /**
      * The tools listed are all the tools associated with specified vendor (and only tools
      * associated with the specified vendor).

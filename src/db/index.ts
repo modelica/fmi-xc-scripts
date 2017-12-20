@@ -3,15 +3,21 @@ export * from './file';
 
 import { Database } from './db';
 import { FileSystemDatabase } from './file';
-// import { MongoDatabase } from './mongo';
-// import { GithubDatabase } from './github';
+import { GithubDatabase } from './github';
 
-export function createDatabase(type: string, artifactsDir: string | null): Database {
+export function createDatabase(type: string, artifactsDir: string | null, repo: string, branch: string): Database {
     if (type == "file") {
         if (artifactsDir) {
             return new FileSystemDatabase(artifactsDir);
         } else {
-            throw new Error("Artifacts directory required for 'file' type database");
+            throw new Error("Directory required for 'file' type database in order to specify artifacts directory");
+        }
+    }
+    if (type == "github") {
+        if (artifactsDir) {
+            return new GithubDatabase(artifactsDir, repo, branch);
+        } else {
+            throw new Error("Directory required for 'github' type database in order to specify working directory");
         }
     }
     // if (type == "mongo") return new MongoDatabase();

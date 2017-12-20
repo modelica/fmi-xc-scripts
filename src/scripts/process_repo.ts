@@ -16,6 +16,10 @@ let argv = yargs
     .default('output', null)
     .string('db')
     .default('db', 'file')
+    .string('repo')
+    .default('repo', 'git@github.com:modelica/fmi-standard.org.git')
+    .string('branch')
+    .default('branch', 'master')
     .boolean('imports')
     .default('imports', true)
     .boolean('pedatic')
@@ -38,7 +42,7 @@ let report = reporter(min);
 
 
 async function run() {
-    let db = createDatabase(argv.db, argv.output);
+    let db = createDatabase(argv.db, argv.output, argv.repo, argv.branch);
     await db.open();
     processDebug("Database opened...");
     for (let i = 0; i < dirs.length; i++) {

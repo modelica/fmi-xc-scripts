@@ -49,7 +49,7 @@ export class FileSystemDatabase implements Database {
         this.xc = await this.loadXCs();
         return undefined;
     }
-    async loadTools(): Promise<ToolsTable> {
+    private async loadTools(): Promise<ToolsTable> {
         let artifacts = this.artifactsDir;
         try {
             fileDebug("Loading tools from file");
@@ -61,7 +61,7 @@ export class FileSystemDatabase implements Database {
         }
     }
 
-    async loadFMUs(): Promise<FMUDetails[]> {
+    private async loadFMUs(): Promise<FMUDetails[]> {
         let artifacts = this.artifactsDir;
         try {
             fileDebug("Loading tools from file");
@@ -73,7 +73,7 @@ export class FileSystemDatabase implements Database {
         }
     }
 
-    async loadXCs(): Promise<CrossCheckResult[]> {
+    private async loadXCs(): Promise<CrossCheckResult[]> {
         let artifacts = this.artifactsDir;
         try {
             fileDebug("Loading tools from file");

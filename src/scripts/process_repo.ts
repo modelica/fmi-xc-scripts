@@ -7,13 +7,15 @@ import { createDatabase } from '../db';
 var ini = require('ini');
 var fs = require('fs');
 
+import * as debug from 'debug';
+const processDebug = debug("fmi:process");
+processDebug.enabled = true;
+
 let argv = yargs
-    .string('artifacts')
-    .default('artifacts', null)
-    .string('dir')
-    .default('dir', ".")
+    .string('output')
+    .default('output', null)
     .string('db')
-    .default('db', 'github')
+    .default('db', 'file')
     .boolean('imports')
     .default('imports', true)
     .boolean('pedatic')
@@ -22,8 +24,9 @@ let argv = yargs
     .default('moved', false)
     .argv;
 
-if (!argv.dir) {
-    console.error("Must specify directory to be processed");
+let dirs = argv._;
+if (dirs.length == 0) {
+    console.error("Must specify directories to process");
     process.exit(1);
 }
 
@@ -33,22 +36,34 @@ if (argv.pedantic) {
 }
 let report = reporter(min);
 
-let inifile = path.join(argv.dir, "vendor.ini")
-let contents = fs.readFileSync(inifile, 'utf-8');
-let obj = ini.parse(contents);
-if (!obj["vendorId"]) {
-    console.error("No 'vendorId' variable found in " + inifile);
-    process.exit(3);
-}
-let vendor = obj["vendorId"];
 
 async function run() {
-    // TODO: Find vendor file and extract vendorId
-    let db = createDatabase(argv.db, argv.artifacts);
+    let db = createDatabase(argv.db, argv.output);
     await db.open();
-    await processRepo(db, argv.dir, vendor, argv.imports, argv.moved, report.reporter);
+    processDebug("Database opened...");
+    for (let i = 0; i < dirs.length; i++) {
+        let dir = dirs[i];
+        processDebug("Processing contents of directory: %s", dir);
+        try {
+            let inifile = path.join(dir, "vendor.ini")
+            let contents = fs.readFileSync(inifile, 'utf-8');
+            let obj = ini.parse(contents);
+            if (!obj["vendorId"]) {
+                console.error("No 'vendorId' variable found in " + inifile);
+                process.exit(3);
+            }
+            let vendor = obj["vendorId"];
+
+            // TODO: Find vendor file and extract vendorId
+            await processRepo(db, dir, vendor, argv.imports, argv.moved, report.reporter);
+        } catch (e) {
+            console.error("Error while processing directory '" + dir + "', skipping: " + e.message);
+        }
+    }
     await db.commit();
+    processDebug("...committed changes to database...");
     await db.close();
+    processDebug("...database closed");
 }
 
 run().then(() => {

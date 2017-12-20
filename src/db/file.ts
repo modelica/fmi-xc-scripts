@@ -12,6 +12,9 @@ function merge<T extends { vendorId: string }>(orig: T[], updating: T[], vendorI
     for (let i = 0; i < updating.length; i++) {
         let entity = updating[i];
         if (entity.vendorId != vendorId) {
+            console.error("Vendor: " + vendorId);
+            console.error("Updates: " + JSON.stringify(updating));
+            console.error("Entity: " + JSON.stringify(entity));
             throw new Error(`Found entity owned by ${entity.vendorId} while updating entities for vendor ${vendorId}`);
         }
     }

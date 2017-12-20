@@ -2,7 +2,7 @@
 
 import * as yargs from 'yargs';
 import * as path from 'path';
-import { infoFiles, reporter, ReportLevel, createRepo } from '../core';
+import { infoFiles, reporter, ReportLevel, createRepo, enumerateErrors } from '../core';
 import * as fs from 'fs';
 import * as ini from 'ini';
 import { VendorDetails } from '@modelica/fmi-data';
@@ -60,7 +60,7 @@ async function run() {
 }
 
 run().then(() => {
-    process.exit(report.numErrors());
+    process.exit(enumerateErrors(report.errors));
 }).catch((e) => {
     console.error("initializeRepo failed: " + e.message);
     process.exit(1);

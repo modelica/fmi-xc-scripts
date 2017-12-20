@@ -24,38 +24,28 @@ const dataDebug = debug("extract:data");
  * @param imports Whether to include processing of imported FMUs
  * @param report A means to report issues during processing.
  */
-export async function processRepo(db: Database, dir: string, vendorId: string, imports: boolean, moved: boolean, report: Reporter) {
+export async function processRepo(db: Database, dir: string, vendorId: string, imports: boolean, report: Reporter) {
     // Read external tools database
     stepsDebug("Processing repo in %s owned by %s", dir, vendorId);
     stepsDebug("  Process imports: %j", imports);
     stepsDebug("Loading external tools");
 
-    // Extract any existing tools in the database
-    let existing = await db.loadTools();
-
-    // Build a map that maps the tool name to it's details (checking for duplicates)
-    let toolMap = new Map<string, ToolSummary>();
-    existing.forEach((tool) => {
-        let exists = toolMap.get(tool.id);
-        if (exists) throw new Error("External tool base is corrupted, multiple tools with name " + tool.id);
-        toolMap.set(tool.id, tool);
-    });
-    stepsDebug("Loaded information for the following tools: %j", toolMap.keys());
-
     // Read tool files and fold them into the tool map as well (making sure the tools we define
     // in this repo haven't already been defined in a diffrent repo).
     let tools = infoFiles(dir);
+    let summaries: ToolSummary[] = [];
     let local: string[] = [];
     stepsDebug("Info files found: %j", tools);
     tools.forEach((toolFile) => {
         let config = parseInfo(path.join(dir, toolFile), vendorId);
         dataDebug("Loaded the following tool configuration data: %o", config);
-        let exists = toolMap.get(config.id);
-        if (exists && exists.vendorId != vendorId && !moved) throw new Error(`This repo (owned by ${vendorId}) defines tool '${config.id}' which was already owned by ${exists.vendorId}`);
         stepsDebug("Adding tool '%s' to tool map", config.id);
-        toolMap.set(config.id, config);
         local.push(config.id);
+        summaries.push(config);
     });
+
+    // Write out: tools.json (ToolsTable)
+    await db.updateTools(Array.from(summaries), vendorId);
 
     // Process exports by searching the exports directory (see `exportDir` constant)
     //   Find all directories of appropriate length
@@ -68,15 +58,26 @@ export async function processRepo(db: Database, dir: string, vendorId: string, i
             dataDebug("All export directories: %o", allExports);
             let exports = validate(allExports, validateExport(local), report);
             dataDebug("Validated export directories: %o", exports);
+
+            let fmus: FMUTable = [];
             //   Build FMUTable
-            let fmus: FMUTable = exports.map((ex) => {
+            exports.forEach((ex) => {
                 let version = parseVersion(ex.fmi_version); // TODO: change to ex.version
                 let variant = parseVariant(ex.variant);
                 let platform = parsePlatform(ex.platform);
-                if (version == null || variant == null || platform == null) {
-                    throw new Error("Unacceptable value found in previously validated data, this should not happen");
+                if (version == null) {
+                    report("Invalid version " + ex.fmi_version + " found in " + ex.dir, ReportLevel.Major);
+                    return;
                 }
-                return {
+                if (variant == null) {
+                    report("Invalid variant " + ex.variant + " found in " + ex.dir, ReportLevel.Major);
+                    return;
+                }
+                if (platform == null) {
+                    report("Invalid platform " + ex.platform + " found in " + ex.dir, ReportLevel.Major);
+                    return;
+                }
+                fmus.push({
                     name: ex.model,
                     vendorId: vendorId,
                     version: version,
@@ -84,7 +85,7 @@ export async function processRepo(db: Database, dir: string, vendorId: string, i
                     platform: platform,
                     export_tool: ex.export_tool,
                     export_version: ex.export_version,
-                }
+                });
             })
 
             // Write out: fmus.json (FMUTable)
@@ -102,7 +103,7 @@ export async function processRepo(db: Database, dir: string, vendorId: string, i
             // Process cross checks
             //   Find all directories of appropriate length
             let allImports = await getImports(xcdir)
-            let imports = validate(allImports, validateImport(local, Array.from(toolMap.keys())), report);
+            let imports = validate(allImports, validateImport, report);
             dataDebug("Import directories: %o", imports);
             let xc: CrossCheckTable = buildTable(imports, vendorId, report);
 
@@ -115,8 +116,5 @@ export async function processRepo(db: Database, dir: string, vendorId: string, i
         if (fs.existsSync(xcdir)) stepsDebug("Skipping import data");
         else stepsDebug("No cross check check directory, skipping");
     }
-
-    // Write out: tools.json (ToolsTable)
-    await db.updateTools(Array.from(toolMap.values()), vendorId);
 }
 

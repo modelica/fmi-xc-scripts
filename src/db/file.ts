@@ -8,6 +8,14 @@ const fileDebug = debug('fmi:db');
 
 import { xcFile, fmusFile, toolsFile } from './files';
 
+function sort<T extends {}>(arr: T[]): void {
+    arr.sort((a, b) => {
+        let sa = JSON.stringify(a);
+        let sb = JSON.stringify(b);
+        return sa > sb ? 1 : (sa < sb ? -1 : 0);
+    })
+}
+
 function merge<T extends { vendorId: string }>(orig: T[], updating: T[], vendorId: string): T[] {
     for (let i = 0; i < updating.length; i++) {
         let entity = updating[i];
@@ -84,18 +92,26 @@ export class FileSystemDatabase implements Database {
 
     async updateFMUs(updating: FMUTable, vendorId: string): Promise<void> {
         fileDebug("Pushing data about %d FMUs: ", updating.length);
+
+        // TODO: Make sure these reference only known tools
+
         this.fmus = merge(this.fmus, updating, vendorId);
     }
 
     async updateCrossChecks(updating: CrossCheckTable, vendorId: string): Promise<void> {
         fileDebug("Pushing data about %d cross check results: ", updating.length);
+
+        // TODO: Make sure these reference only known tools
+
         this.xc = merge(this.xc, updating, vendorId);
     }
 
     async commit() {
         let artifacts = this.artifactsDir;
 
-        // TODO: Put everyt
+        sort(this.tools);
+        sort(this.fmus);
+        sort(this.xc);
 
         // Writing tools
         fs.mkdirpSync(artifacts);

@@ -198,28 +198,17 @@ export function validateExport(local: string[]) {
  * @param local List of tools local to the repository currently being processed.
  * @param tools List of all tools
  */
-export function validateImport(local: string[], tools: string[]) {
-    return (x: ImportDetails, reporter: Reporter): void => {
-        let idx = local.indexOf(x.import_tool);
-        if (idx == -1) {
-            let names = local.join(", ");
-            reporter(`Import tool '${x.import_tool}' is not among list of tools defined in this repo: ${names}`, ReportLevel.Major);
-        }
-        idx = tools.indexOf(x.export_tool);
-        if (idx == -1) {
-            reporter(`Export tool '${x.export_tool}' is not among the list of known FMI tools`, ReportLevel.Major);
-        }
-        if (parseVersion(x.fmi_version) == null) reporter(`Unknown FMI version '${x.fmi_version}'`, ReportLevel.Major);
-        if (parseVariant(x.variant) == null) reporter(`Unknown FMI variant '${x.variant}'`, ReportLevel.Major);
-        if (parsePlatform(x.platform) == null) reporter(`Unknown FMI platform '${x.platform}'`, ReportLevel.Major);
-        let passedFile = path.join(x.dir, "passed");
-        if (fs.existsSync(passedFile)) {
-            let csvName = x.model + "_out.csv";
-            if (!fs.existsSync(path.join(x.dir, csvName))) reporter(`No CSV file named ${csvName} found in ${x.dir}`, ReportLevel.Minor);
-        }
-        if (!fs.existsSync(path.join(x.dir, "ReadMe.txt")) && !fs.existsSync(path.join(x.dir, "ReadMe.pdf"))) {
-            reporter(`No ReadMe.txt or ReadMe.pdf found in ${x.dir}`, ReportLevel.Minor);
-        }
+export function validateImport(x: ImportDetails, reporter: Reporter): void {
+    if (parseVersion(x.fmi_version) == null) reporter(`Unknown FMI version '${x.fmi_version}'`, ReportLevel.Major);
+    if (parseVariant(x.variant) == null) reporter(`Unknown FMI variant '${x.variant}'`, ReportLevel.Major);
+    if (parsePlatform(x.platform) == null) reporter(`Unknown FMI platform '${x.platform}'`, ReportLevel.Major);
+    let passedFile = path.join(x.dir, "passed");
+    if (fs.existsSync(passedFile)) {
+        let csvName = x.model + "_out.csv";
+        if (!fs.existsSync(path.join(x.dir, csvName))) reporter(`No CSV file named ${csvName} found in ${x.dir}`, ReportLevel.Minor);
+    }
+    if (!fs.existsSync(path.join(x.dir, "ReadMe.txt")) && !fs.existsSync(path.join(x.dir, "ReadMe.pdf"))) {
+        reporter(`No ReadMe.txt or ReadMe.pdf found in ${x.dir}`, ReportLevel.Minor);
     }
 }
 
@@ -232,12 +221,23 @@ export function validateImport(local: string[], tools: string[]) {
 export function buildTable(imports: ImportDetails[], vendorId: string, reporter: Reporter): CrossCheckTable {
     // Loop over all imports
     utilDebug("Building cross-check result table");
-    return imports.map((imp): CrossCheckResult => {
-        let version = parseVersion(imp.fmi_version); // TODO: change to ex.version
+
+    let table: CrossCheckTable = [];
+    imports.forEach((imp): void => {
+        let version = parseVersion(imp.fmi_version);
         let variant = parseVariant(imp.variant);
         let platform = parsePlatform(imp.platform);
-        if (version == null || variant == null || platform == null) {
-            throw new Error("Unacceptable value found in previously validated data, this should not happen");
+        if (version == null) {
+            reporter("Unknown version " + imp.fmi_version + " found in " + imp.dir + ", skipping", ReportLevel.Major);
+            return;
+        }
+        if (variant == null) {
+            reporter("Unknown variant " + imp.variant + " found in " + imp.dir + ", skipping", ReportLevel.Major);
+            return;
+        }
+        if (platform == null) {
+            reporter("Unknown version " + imp.platform + " found in " + imp.dir + ", skipping", ReportLevel.Major);
+            return;
         }
         let status = parseResult(imp.dir, reporter);
         let ret: CrossCheckResult = {
@@ -252,8 +252,9 @@ export function buildTable(imports: ImportDetails[], vendorId: string, reporter:
             model: imp.model,
             status: status,
         }
-        return ret;
+        table.push(ret);
     });
+    return table;
 }
 
 /**
@@ -277,7 +278,8 @@ function parseResult(dir: string, reporter: Reporter): CrossCheckStatus {
  */
 export function reporter(min: ReportLevel) {
     let reported = new Set<string>();
-    let numErrors = 0;
+    let errors: { [vendor: string]: string[] } = {};
+    let vendor: string = "";
     let reporter: Reporter = (msg: string, level: ReportLevel) => {
         if (reported.has(msg)) return;
         if (level >= min) {
@@ -289,11 +291,31 @@ export function reporter(min: ReportLevel) {
             }
         }
         if (level >= ReportLevel.Fatal) {
-            numErrors++;
+            if (!errors.hasOwnProperty(vendor)) {
+                errors[vendor] = [];
+            }
+            errors[vendor].push(msg);
         }
     }
     return {
         reporter: reporter,
-        numErrors: () => numErrors,
+        errors: errors,
     }
+}
+
+export function enumerateErrors(errors: { [vendor: string]: string[] }) {
+    let count = 0;
+    let vendors = Object.keys(errors);
+    for (let i = 0; i < vendors.length; i++) {
+        let vendor = vendors[i];
+        let msgs = errors[vendor];
+        if (msgs.length == 0) continue;
+        console.error("Errors for vendor: " + vendor);
+        for (let j = 0; j < msgs.length; j++) {
+            let msg = msgs[j];
+            console.error("  " + msg);
+            count++;
+        }
+    }
+    return count;
 }

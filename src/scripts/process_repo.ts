@@ -2,7 +2,7 @@
 
 import * as yargs from 'yargs';
 import * as path from 'path';
-import { processRepo, reporter, ReportLevel } from '../core';
+import { processRepo, reporter, ReportLevel, enumerateErrors } from '../core';
 import { createDatabase } from '../db';
 var ini = require('ini');
 var fs = require('fs');
@@ -55,7 +55,7 @@ async function run() {
             let vendor = obj["vendorId"];
 
             // TODO: Find vendor file and extract vendorId
-            await processRepo(db, dir, vendor, argv.imports, argv.moved, report.reporter);
+            await processRepo(db, dir, vendor, argv.imports, report.reporter);
         } catch (e) {
             console.error("Error while processing directory '" + dir + "', skipping: " + e.message);
         }
@@ -67,7 +67,7 @@ async function run() {
 }
 
 run().then(() => {
-    process.exit(report.numErrors());
+    process.exit(enumerateErrors(report.errors));
 }).catch((e) => {
     console.error("procesRepo failed: " + e.message);
     process.exit(1);

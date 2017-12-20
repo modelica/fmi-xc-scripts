@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import * as yargs from 'yargs';
-import { createRepo, reporter, ReportLevel } from '../core';
+import { createRepo, reporter, ReportLevel, enumerateErrors } from '../core';
 import { VendorDetails } from '@modelica/fmi-data';
 
 let argv = yargs
@@ -64,7 +64,7 @@ let vendor: VendorDetails = {
 }
 
 createRepo(vendor, argv.tool, argv.repo, argv.root, report.reporter).then(() => {
-    process.exit(report.numErrors());
+    process.exit(enumerateErrors(report.errors));
 }).catch((e) => {
     console.error("createRepo failed: " + e.message);
     process.exit(1);

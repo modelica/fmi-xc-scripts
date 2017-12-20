@@ -7,7 +7,6 @@ import * as path from 'path';
 
 import * as debug from 'debug';
 const githubDebug = debug("fmi:github");
-githubDebug.enabled = true;
 
 const userName = "process_repo script";
 const userEmail = "webmaster@modelica.org";

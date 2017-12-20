@@ -9,7 +9,6 @@ var fs = require('fs');
 
 import * as debug from 'debug';
 const processDebug = debug("fmi:process");
-processDebug.enabled = true;
 
 let argv = yargs
     .string('output')

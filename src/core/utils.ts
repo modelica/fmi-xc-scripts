@@ -229,7 +229,7 @@ export function validateImport(local: string[], tools: string[]) {
  * @param imports All import related data for the local tools
  * @param reporter 
  */
-export function buildTable(imports: ImportDetails[], reporter: Reporter): CrossCheckTable {
+export function buildTable(imports: ImportDetails[], vendorId: string, reporter: Reporter): CrossCheckTable {
     // Loop over all imports
     utilDebug("Building cross-check result table");
     return imports.map((imp): CrossCheckResult => {
@@ -244,6 +244,7 @@ export function buildTable(imports: ImportDetails[], reporter: Reporter): CrossC
             version: version,
             variant: variant,
             platform: platform,
+            vendorId: vendorId,
             import_tool: imp.import_tool,
             import_version: imp.import_version,
             export_tool: imp.export_tool,

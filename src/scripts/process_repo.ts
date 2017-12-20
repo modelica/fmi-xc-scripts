@@ -27,14 +27,11 @@ if (!argv.dir) {
     process.exit(1);
 }
 
-let artifactsDir = argv.artifacts ? path.join(argv.dir, argv.artifacts) : null;
 let min = ReportLevel.Minor;
-
 if (argv.pedantic) {
     min = ReportLevel.Major;
 }
 let report = reporter(min);
-let db = createDatabase(argv.db);
 
 let inifile = path.join(argv.dir, "vendor.ini")
 let contents = fs.readFileSync(inifile, 'utf-8');
@@ -45,7 +42,16 @@ if (!obj["vendorId"]) {
 }
 let vendor = obj["vendorId"];
 
-processRepo(db, argv.dir, vendor, artifactsDir, argv.imports, argv.moved, report.reporter).then(() => {
+async function run() {
+    // TODO: Find vendor file and extract vendorId
+    let db = createDatabase(argv.db, argv.artifacts);
+    await db.open();
+    await processRepo(db, argv.dir, vendor, argv.imports, argv.moved, report.reporter);
+    await db.commit();
+    await db.close();
+}
+
+run().then(() => {
     process.exit(report.numErrors());
 }).catch((e) => {
     console.error("procesRepo failed: " + e.message);

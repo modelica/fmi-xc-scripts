@@ -31,9 +31,6 @@ point to the directory containing the contents of the SVN repository.  The
 `repodir` should point to a directory where tool specific repositories should
 be created.
 
-The `create`, `process` and `imports` flags enable or disable various steps
-in the process (and all default to `true`).
-
 ## `create_repo`
 
 This script is used to extract a given `tool` from the legacy SVN directory structure

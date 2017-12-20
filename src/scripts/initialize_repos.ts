@@ -2,8 +2,7 @@
 
 import * as yargs from 'yargs';
 import * as path from 'path';
-import { infoFiles, reporter, ReportLevel, createRepo, processRepo } from '../core';
-import { createDatabase } from '../db';
+import { infoFiles, reporter, ReportLevel, createRepo } from '../core';
 import * as fs from 'fs';
 import * as ini from 'ini';
 import { VendorDetails } from '@modelica/fmi-data';
@@ -16,14 +15,6 @@ const argv = yargs
     .default('repodir', null)
     .string('root')
     .default('root', null)
-    .string('db')
-    .default('db', 'github')
-    .boolean('create')
-    .default('create', true)
-    .boolean('process')
-    .default('process', true)
-    .boolean('imports')
-    .default('imports', true)
     .number('pedantic')
     .default('pedantic', true)
     .argv;
@@ -58,39 +49,13 @@ let report = reporter(argv.pedantic ? ReportLevel.Minor : ReportLevel.Major);
 async function run() {
     let files = await infoFiles(path.join(argv.root, "tools"));
     initDebug("Info files: %j", files);
-    let db = createDatabase(argv.db);
     for (let file of files) {
         let toolname = file.replace(".info", "");
         let vendor = vendorInfo(file);
 
         let rdir = path.join(argv.repodir, vendor.vendorId);
-        if (argv.create) {
-            console.log(`Create repo for tool ${toolname} in ${rdir} pulling data from ${argv.root}`);
-            await createRepo(vendor, toolname, rdir, argv.root, report.reporter);
-        }
-        if (argv.process) {
-            try {
-                console.log(`  Processing tool data in repo for vendor ${vendor}`);
-                let artifactsDir = path.join(rdir, "artifacts");
-                await processRepo(db, rdir, vendor.repo, artifactsDir, false, true, report.reporter);
-            } catch (e) {
-                console.error("Error while processing vendor " + vendor + ": ", e.message);
-            }
-        }
-    }
-    if (argv.process && argv.imports) {
-        for (let file of files) {
-            let toolname = file.replace(".info", "");
-            let vendor = vendorInfo(file);
-            let rdir = path.join(argv.repodir, toolname);
-            try {
-                console.log(`  Processing import data in repo for tool ${toolname}`);
-                let artifactsDir = path.join(rdir, "artifacts");
-                await processRepo(db, rdir, vendor.repo, artifactsDir, true, true, report.reporter);
-            } catch (e) {
-                console.error("Error while processing tool " + toolname + ": ", e.message);
-            }
-        }
+        console.log(`Create repo for tool ${toolname} in ${rdir} pulling data from ${argv.root}`);
+        await createRepo(vendor, toolname, rdir, argv.root, report.reporter);
     }
 }
 

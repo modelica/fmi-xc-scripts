@@ -24,15 +24,14 @@ const dataDebug = debug("extract:data");
  * @param imports Whether to include processing of imported FMUs
  * @param report A means to report issues during processing.
  */
-export async function processRepo(db: Database, dir: string, vendorId: string, artifactsDir: string | null, imports: boolean, moved: boolean, report: Reporter) {
+export async function processRepo(db: Database, dir: string, vendorId: string, imports: boolean, moved: boolean, report: Reporter) {
     // Read external tools database
     stepsDebug("Processing repo in %s owned by %s", dir, vendorId);
-    stepsDebug("  Artifacts directory: %s", artifactsDir);
     stepsDebug("  Process imports: %j", imports);
     stepsDebug("Loading external tools");
 
     // Extract any existing tools in the database
-    let existing = await db.loadTools(artifactsDir);
+    let existing = await db.loadTools();
 
     // Build a map that maps the tool name to it's details (checking for duplicates)
     let toolMap = new Map<string, ToolSummary>();
@@ -79,6 +78,7 @@ export async function processRepo(db: Database, dir: string, vendorId: string, a
                 }
                 return {
                     name: ex.model,
+                    vendorId: vendorId,
                     version: version,
                     variant: variant,
                     platform: platform,
@@ -88,7 +88,7 @@ export async function processRepo(db: Database, dir: string, vendorId: string, a
             })
 
             // Write out: fmus.json (FMUTable)
-            await db.pushFMUs(fmus, local, artifactsDir);
+            await db.updateFMUs(fmus, vendorId);
         }
     } catch (e) {
         report("Error while processing exports in " + dir + ": " + e.message, ReportLevel.Fatal);
@@ -104,10 +104,10 @@ export async function processRepo(db: Database, dir: string, vendorId: string, a
             let allImports = await getImports(xcdir)
             let imports = validate(allImports, validateImport(local, Array.from(toolMap.keys())), report);
             dataDebug("Import directories: %o", imports);
-            let xc: CrossCheckTable = buildTable(imports, report);
+            let xc: CrossCheckTable = buildTable(imports, vendorId, report);
 
             // Write out: xc_results.json (CrossCheckTable)
-            await db.pushCrossChecks(xc, local, artifactsDir);
+            await db.updateCrossChecks(xc, vendorId);
         } catch (e) {
             report("Error while processing imports in " + dir + ": " + e.message, ReportLevel.Fatal);
         }
@@ -117,6 +117,6 @@ export async function processRepo(db: Database, dir: string, vendorId: string, a
     }
 
     // Write out: tools.json (ToolsTable)
-    await db.pushTools(toolMap, local, artifactsDir);
+    await db.updateTools(Array.from(toolMap.values()), vendorId);
 }
 

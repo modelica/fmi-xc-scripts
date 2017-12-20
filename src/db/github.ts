@@ -9,7 +9,7 @@ import * as debug from 'debug';
 const githubDebug = debug('fmi:github');
 
 const toolsFile = "_data/tools.json";
-const fmusFile = "_data/FMUs.json";
+const fmusFile = "_data/fmus.json";
 const xcFile = "_data/xc_results.json";
 
 /**
@@ -184,6 +184,7 @@ async function readFile<T extends {}>(file: string, during: string): Promise<T> 
         let url = getContentsURL(file);
         githubDebug("    API URL: %s", url);
         let resp = await axios.default(url, config);
+        githubDebug("      Response Status: %d", resp.status);
         let sha = resp.data.sha;
         githubDebug("    SHA: %s", sha);
         let blobUrl = `https://api.github.com/repos/modelica/fmi-standard.org/git/blobs/${sha}`;
@@ -205,6 +206,10 @@ async function readFile<T extends {}>(file: string, during: string): Promise<T> 
             return resp.data;
         }
     } catch (e) {
+        githubDebug("Error reading file %s: %s", file, e.message);
+        if (e.response) {
+            githubDebug("  Response: %j", e.response);
+        }
         throw e;
     }
 }

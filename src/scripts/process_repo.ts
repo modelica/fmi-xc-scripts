@@ -1,11 +1,8 @@
 #!/usr/bin/env node
 
 import * as yargs from 'yargs';
-import * as path from 'path';
-import { processRepo, reporter, ReportLevel, enumerateErrors } from '../core';
+import { processRepo, reporter, ReportLevel, enumerateErrors, loadVendorData } from '../core';
 import { createDatabase } from '../db';
-var ini = require('ini');
-var fs = require('fs');
 
 import * as debug from 'debug';
 const processDebug = debug("fmi:process");
@@ -22,7 +19,7 @@ let argv = yargs
     .boolean('imports')
     .default('imports', true)
     .boolean('pedatic')
-    .default('pedantic', true)
+    .default('pedantic', false)
     .boolean('moved')
     .default('moved', false)
     .argv;
@@ -34,7 +31,7 @@ if (dirs.length == 0) {
 }
 
 let min = ReportLevel.Minor;
-if (argv.pedantic) {
+if (!argv.pedantic) {
     min = ReportLevel.Major;
 }
 let report = reporter(min);
@@ -48,17 +45,8 @@ async function run() {
         let dir = dirs[i];
         processDebug("Processing contents of directory: %s", dir);
         try {
-            let inifile = path.join(dir, "vendor.ini")
-            let contents = fs.readFileSync(inifile, 'utf-8');
-            let obj = ini.parse(contents);
-            if (!obj["vendorId"]) {
-                console.error("No 'vendorId' variable found in " + inifile);
-                process.exit(3);
-            }
-            let vendor = obj["vendorId"];
-
-            // TODO: Find vendor file and extract vendorId
-            await processRepo(db, dir, vendor, argv.imports, report.reporter);
+            let vendor = loadVendorData(dir);
+            await processRepo(db, dir, vendor.vendorId, argv.imports, report.reporter);
         } catch (e) {
             console.error("Error while processing directory '" + dir + "', skipping: " + e.message);
         }

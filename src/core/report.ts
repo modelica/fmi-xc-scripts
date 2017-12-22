@@ -1,3 +1,5 @@
+import * as fs from 'fs';
+
 /**
  * Establishes a "level" for flagging concerns while processing.
  */
@@ -18,7 +20,7 @@ export type Reporter = (x: string, level: ReportLevel) => void;
  * @export
  * @returns 
  */
-export function reporter(min: ReportLevel) {
+export function consoleReporter(min: ReportLevel) {
     let reported = new Set<string>();
     let errors: { [vendor: string]: string[] } = {};
     let vendor: string = "";
@@ -30,6 +32,39 @@ export function reporter(min: ReportLevel) {
                 console.error("ERROR: " + msg);
             } else {
                 console.warn("WARNING: " + msg);
+            }
+        }
+        if (level >= ReportLevel.Fatal) {
+            if (!errors.hasOwnProperty(vendor)) {
+                errors[vendor] = [];
+            }
+            errors[vendor].push(msg);
+        }
+    }
+    return {
+        reporter: reporter,
+        errors: errors,
+    }
+}
+
+/**
+ * Yields a reporter that doesn't repeat itself
+ * 
+ * @export
+ * @returns 
+ */
+export function logReporter(min: ReportLevel, logfile: string) {
+    let reported = new Set<string>();
+    let errors: { [vendor: string]: string[] } = {};
+    let vendor: string = "";
+    let reporter: Reporter = (msg: string, level: ReportLevel) => {
+        if (reported.has(msg)) return;
+        if (level >= min) {
+            reported.add(msg);
+            if (level >= ReportLevel.Fatal) {
+                fs.appendFileSync(logfile, "ERROR: " + msg);
+            } else {
+                fs.appendFileSync(logfile, "WARNING: " + msg);
             }
         }
         if (level >= ReportLevel.Fatal) {

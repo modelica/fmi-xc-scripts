@@ -1,4 +1,5 @@
 import { VendorDetails, LegacyToolFile } from '@modelica/fmi-data';
+import { findFilesWithSuffix } from '../core';
 import * as ini from 'ini';
 import * as path from 'path';
 import * as fs from 'fs';
@@ -13,8 +14,15 @@ function readProp(obj: any, prop: string, def?: string): string {
 }
 
 export function loadVendorData(dir: string): VendorDetails {
-    let inifile = path.join(dir, "vendor.ini")
-    let contents = fs.readFileSync(inifile, 'utf-8');
+    let vendorFiles = findFilesWithSuffix(dir, ".vendor");
+    if (vendorFiles.length == 0) {
+        throw new Error("No .vendor file found in " + dir);
+    }
+    if (vendorFiles.length > 1) {
+        throw new Error("Multiple .vendor files found in " + dir + ": " + vendorFiles.join(", "));
+    }
+    let vendorFile = path.join(dir, vendorFiles[0]);
+    let contents = fs.readFileSync(vendorFile, 'utf-8');
     let obj = ini.parse(contents);
     vendorDebug("Vendor object: %j", obj);
 

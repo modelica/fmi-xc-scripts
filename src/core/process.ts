@@ -10,8 +10,8 @@ import * as debug from 'debug';
 import * as path from 'path';
 import * as fs from 'fs';
 
-const stepsDebug = debug("extract:steps");
-const dataDebug = debug("extract:data");
+const stepsDebug = debug("fmi:steps");
+const dataDebug = debug("fmi:data");
 
 /**
  * This function is called by the process_repo script.  The purpose of this function is to
@@ -37,8 +37,10 @@ export async function processRepo(db: Database, dir: string, vendorId: string, i
     let tools = findFilesWithSuffix(dir, "tool");
     stepsDebug("Info files found: %j", tools);
 
-    let summaries = tools.map((toolFile) => buildToolSummaryFromToolFile(toolFile, report));
+    let summaries = tools.map((toolFile) => buildToolSummaryFromToolFile(path.join(dir, toolFile), report));
     let local = summaries.map((data) => data.id);
+    dataDebug("  Summaries: %j", summaries);
+    dataDebug("  Local tools: %j", local);
 
     // Update database with tool information
     await db.updateTools(summaries, vendorId);
@@ -110,7 +112,7 @@ export async function processRepo(db: Database, dir: string, vendorId: string, i
         }
     } else {
         if (fs.existsSync(xcdir)) stepsDebug("Skipping import data");
-        else stepsDebug("No cross check check directory, skipping");
+        else stepsDebug("No cross check directory named " + xcdir + ", skipping");
     }
 }
 

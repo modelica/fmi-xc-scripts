@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import * as yargs from 'yargs';
-import { createRepo, reporter, ReportLevel, enumerateErrors } from '../core';
+import { createRepo, consoleReporter, ReportLevel, enumerateErrors } from '../core';
 import { createVendorDataFromLegacyToolFile } from '../io';
 
 let argv = yargs
@@ -20,7 +20,7 @@ if (!argv.repo) {
     process.exit(1);
 }
 
-let report = reporter(argv.pedantic ? ReportLevel.Minor : ReportLevel.Major);
+let report = consoleReporter(argv.pedantic ? ReportLevel.Minor : ReportLevel.Major);
 
 if (!argv.tool) {
     console.error("No value provided for --tool");

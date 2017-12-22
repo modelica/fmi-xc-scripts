@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import * as yargs from 'yargs';
-import { processRepo, reporter, ReportLevel, enumerateErrors } from '../core';
+import { processRepo, consoleReporter, logReporter, ReportLevel, enumerateErrors } from '../core';
 import { loadVendorData } from '../io';
 import { createDatabase } from '../db';
 
@@ -23,6 +23,8 @@ let argv = yargs
     .default('pedantic', false)
     .boolean('moved')
     .default('moved', false)
+    .string('logfile')
+    .default('logfile', null)
     .argv;
 
 let dirs = argv._;
@@ -35,8 +37,8 @@ let min = ReportLevel.Minor;
 if (!argv.pedantic) {
     min = ReportLevel.Major;
 }
-let report = reporter(min);
 
+let report = argv.logfile ? logReporter(min, argv.logfile) : consoleReporter(min);
 
 async function run() {
     // Create and open database

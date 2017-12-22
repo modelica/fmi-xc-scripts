@@ -13,6 +13,9 @@ export function parseToolFile(filename: string): { id: string, tool: ToolFile } 
     let obj = ini.parse(contents);
     toolsDebug("Tool file %s contains: %j", filename, obj);
 
+    if (!obj.hasOwnProperty("FMI1_0")) obj.FMI1_0 = {};
+    if (!obj.hasOwnProperty("FMI2_0")) obj.FMI2_0 = {};
+
     let id = path.basename(filename, ".tool");
 
     return {

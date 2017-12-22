@@ -1,6 +1,5 @@
-var find = require('findit');
-var path = require('path');
 import { ExportDetails, Predicate } from './exports';
+import { getDirectories } from './utils';
 
 import * as debug from 'debug';
 const importDebug = debug("fmi:imports");
@@ -36,42 +35,6 @@ function parseImport(dir: string, rel: string, parts: string[]): ImportDetails {
     };
 }
 
-interface DirectoryDetails {
-    dir: string;
-    rel: string;
-    parts: string[];
-}
-
-function getDirectories(root: string): Promise<DirectoryDetails[]> {
-    return new Promise((resolve, reject) => {
-        let finder = find(root, {});
-        let ret: DirectoryDetails[] = [];
-
-        importDebug("  Searching for directories in %s", root);
-        // Handle each directory
-        finder.on('directory', (dir: string) => {
-            // Identify relative path and then split it into components
-            let rel = path.relative(root, dir);
-            let parts = rel.split("/");
-
-            ret.push({ dir: dir, rel: rel, parts: parts });
-        })
-
-        // Reject the promise if there is an error traversing the directory structure
-        finder.on('error', (err: string) => {
-            reject(err);
-        })
-
-        // Resolve the promise once we have complete traversing the directory structure
-        finder.on('end', () => {
-            cachedDirectories[root] = ret;
-            resolve(ret);
-        })
-    })
-}
-
-const cachedDirectories: { [dir: string]: DirectoryDetails[] } = {};
-
 /**
  * Locate all imported FMUs in a given directory (subject to a given criteria)
  * 
@@ -81,7 +44,7 @@ const cachedDirectories: { [dir: string]: DirectoryDetails[] } = {};
 export async function getImports(root: string, pred?: Predicate<ImportDetails>): Promise<ImportDetails[]> {
     let predicate: Predicate<ImportDetails> = pred || (() => true);
     importDebug("Looking for imports in '%s'", root);
-    let dirs = cachedDirectories.hasOwnProperty(root) ? cachedDirectories[root] : await getDirectories(root);
+    let dirs = await getDirectories(root);
     let ret: ImportDetails[] = [];
     importDebug("  Looking for directories that match our selection criteria");
     dirs.forEach((directory) => {

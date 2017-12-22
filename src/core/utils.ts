@@ -12,6 +12,7 @@ import { ImportDetails } from './imports';
 
 import * as fs from 'fs';
 import * as path from 'path';
+var find = require('findit');
 
 import * as debug from 'debug';
 const utilDebug = debug('fmi:utils');
@@ -163,3 +164,39 @@ function parseResult(dir: string, reporter: Reporter): CrossCheckStatus {
     reporter(`No result file name 'passed', 'failed' or 'rejected' found in ${dir}`, ReportLevel.Minor);
     return "failed";
 }
+
+export interface DirectoryDetails {
+    dir: string;
+    rel: string;
+    parts: string[];
+}
+
+export function getDirectories(root: string): Promise<DirectoryDetails[]> {
+    if (cachedDirectories.hasOwnProperty(root)) return Promise.resolve(cachedDirectories[root]);
+    return new Promise((resolve, reject) => {
+        let finder = find(root, {});
+        let ret: DirectoryDetails[] = [];
+
+        // Handle each directory
+        finder.on('directory', (dir: string) => {
+            // Identify relative path and then split it into components
+            let rel = path.relative(root, dir);
+            let parts = rel.split("/");
+
+            ret.push({ dir: dir, rel: rel, parts: parts });
+        })
+
+        // Reject the promise if there is an error traversing the directory structure
+        finder.on('error', (err: string) => {
+            reject(err);
+        })
+
+        // Resolve the promise once we have complete traversing the directory structure
+        finder.on('end', () => {
+            cachedDirectories[root] = ret;
+            resolve(ret);
+        })
+    })
+}
+
+const cachedDirectories: { [dir: string]: DirectoryDetails[] } = {};

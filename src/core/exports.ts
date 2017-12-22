@@ -1,5 +1,6 @@
-var find = require('findit');
-var path = require('path');
+import { getDirectories } from './utils';
+import * as debug from 'debug';
+const exportDebug = debug("fmi:exports");
 
 export type Predicate<T> = (x: T) => boolean;
 
@@ -55,38 +56,21 @@ function parseExport(dir: string, rel: string, parts: string[]): ExportDetails {
  * @param root Root directory to search
  * @param pred Predicate to determine what to include
  */
-export function getExports(root: string, pred?: Predicate<ExportDetails>): Promise<ExportDetails[]> {
+export async function getExports(root: string, pred?: Predicate<ExportDetails>): Promise<ExportDetails[]> {
     let predicate: Predicate<ExportDetails> = pred || (() => true);
-    return new Promise((resolve, reject) => {
-        let finder = find(root, {});
-        let ret: ExportDetails[] = [];
-
-        // Process each directory that we come across
-        finder.on('directory', (dir: string) => {
-            // Extract relative path and split it
-            let rel = path.relative(root, dir);
-            let parts = rel.split("/");
-
-            // If there are 6 parts, then call parseExport to formulate
-            // the details for this particular directory.
-            if (parts.length == 6) {
-                let details = parseExport(dir, rel, parts);
-                // If this satisfies our predicate, add it to our return list
-                if (predicate(details)) {
-                    ret.push(details);
-                }
+    exportDebug("Looking for exported FMUs in '%s'", root);
+    let dirs = await getDirectories(root);
+    let ret: ExportDetails[] = [];
+    exportDebug("  Looking for directories that match our selection criteria");
+    dirs.forEach((directory) => {
+        // If there are 6 parts, then call parseExport to formulate
+        // the details for this particular directory.
+        if (directory.parts.length == 6) {
+            let details = parseExport(directory.dir, directory.rel, directory.parts);
+            if (predicate(details)) {
+                ret.push(details);
             }
-        })
-
-        // Reject the promise being returned
-        finder.on('error', (err: string) => {
-            reject(err);
-        })
-
-        // Resolve the promise being returned with the data
-        // we collected from each 'directory' event.
-        finder.on('end', () => {
-            resolve(ret);
-        })
+        }
     })
+    return ret;
 }

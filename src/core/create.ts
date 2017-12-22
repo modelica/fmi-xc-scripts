@@ -44,7 +44,8 @@ export async function createRepo(vendor: VendorDetails, tool: string, repo: stri
     createDebug("Collecting export directories for %s", tool);
     try {
         let edetails = await getExports(FMUs, (d) => d.export_tool == tool);
-        copyFiles(edetails, repo);
+        copyFiles(exportDir, edetails, repo);
+        createDebug("  Copied %d export directories", edetails.length);
     } catch (e) {
         report("Error while extracting export directories for " + tool + ": " + e.message, ReportLevel.Fatal);
     }
@@ -54,7 +55,8 @@ export async function createRepo(vendor: VendorDetails, tool: string, repo: stri
     createDebug("Collecting import directories for %s", tool);
     try {
         let idetails = await getImports(crossChecks, (d) => d.import_tool == tool);
-        copyFiles(idetails, repo);
+        copyFiles(crossCheckDir, idetails, repo);
+        createDebug("  Copied %d cross-check directories", idetails.length);
     } catch (e) {
         report("Error while extracting import directories for " + tool + ": " + e.message, ReportLevel.Fatal);
     }
@@ -100,8 +102,6 @@ function generateToolFile(root: string, repo: string, legacyToolFile: string, ve
     }
 }
 
-// TODO: Get rid of this
-const doCopy = false;
 /**
  * This function copies a collection of files from one place to another providing
  * progress information as it goes.
@@ -109,17 +109,15 @@ const doCopy = false;
  * @param details A list of files to be moved
  * @param repo Vendor repository to move them to
  */
-function copyFiles(details: Array<{ rel: string, dir: string }>, repo: string) {
+function copyFiles(dst: string, details: Array<{ rel: string, dir: string }>, repo: string) {
     details.forEach((match, index) => {
         let from = match.dir;
-        let to = path.join(repo, crossCheckDir, match.rel);
+        let to = path.join(repo, dst, match.rel);
 
         let per = (100 * index / details.length).toFixed(0);
-        process.stdout.write(` [${per}%] \r`);
-        if (doCopy) {
-            fs.copySync(from, to, {
-                recursive: true,
-            });
-        }
+        process.stdout.write(` [${per}%]  \r`);
+        fs.copySync(from, to, {
+            recursive: true,
+        });
     });
 }

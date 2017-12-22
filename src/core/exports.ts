@@ -1,4 +1,10 @@
 import { getDirectories } from './utils';
+import { Reporter, ReportLevel } from './report';
+import { parsePlatform, parseVariant, parseVersion } from '@modelica/fmi-data';
+
+import * as path from 'path';
+import * as fs from 'fs';
+
 import * as debug from 'debug';
 const exportDebug = debug("fmi:exports");
 
@@ -73,4 +79,37 @@ export async function getExports(root: string, pred?: Predicate<ExportDetails>):
         }
     })
     return ret;
+}
+
+/**
+ * Return a function that can be used to validate ExportDetails.
+ * 
+ * @param local List of tools local to the repository currently being processed.
+ */
+export function validateExport(local: string[]) {
+    return (x: ExportDetails, reporter: Reporter): void => {
+        let idx = local.indexOf(x.export_tool);
+        if (idx == -1) {
+            let names = local.join(", ");
+            reporter(`Tool '${x.export_tool}' is not among list of tools defined in this repo: ${names}`, ReportLevel.Major);
+        }
+        if (parseVersion(x.fmi_version) == null) reporter(`Unknown FMI version '${x.fmi_version}'`, ReportLevel.Major);
+        if (parseVariant(x.variant) == null) reporter(`Unknown FMI variant '${x.variant}'`, ReportLevel.Major);
+        if (parsePlatform(x.platform) == null) reporter(`Unknown FMI platform '${x.platform}'`, ReportLevel.Major);
+        let requiredFiles = [
+            '.fmu', '_ref.csv', '_in.csv', '_cc.log', '_cc.csv', '_ref.opt',
+        ];
+        // TODO: Check for Readme?
+        // TODO: Check for batch
+        for (let suffix of requiredFiles) {
+            let fileName = `${x.model}${suffix}`
+            if (!fs.existsSync(path.join(x.dir, fileName))) reporter(`Expected to find a file named ${fileName} in ${x.dir}`, ReportLevel.Major);
+        }
+        if (!fs.existsSync(path.join(x.dir, "ReadMe.txt")) && !fs.existsSync(path.join(x.dir, "ReadMe.pdf"))) {
+            reporter(`No ReadMe.txt or ReadMe.pdf found in ${x.dir}`, ReportLevel.Minor);
+        }
+        if (!fs.existsSync(path.join(x.dir, `${x.model}_cc.bat`)) && !fs.existsSync(path.join(x.dir, `${x.model}_cc.sh`))) {
+            reporter(`No shell script (.bat or .sh) found in ${x.dir}`, ReportLevel.Minor);
+        }
+    }
 }

@@ -1,5 +1,10 @@
 import { ExportDetails, Predicate } from './exports';
 import { getDirectories } from './utils';
+import { Reporter, ReportLevel } from './report';
+import { parsePlatform, parseVariant, parseVersion } from '@modelica/fmi-data';
+
+import * as path from 'path';
+import * as fs from 'fs';
 
 import * as debug from 'debug';
 const importDebug = debug("fmi:imports");
@@ -59,3 +64,25 @@ export async function getImports(root: string, pred?: Predicate<ImportDetails>):
     })
     return ret;
 }
+
+
+/**
+ * Returns a function that validates import details.
+ * 
+ * @param local List of tools local to the repository currently being processed.
+ * @param tools List of all tools
+ */
+export function validateImport(x: ImportDetails, reporter: Reporter): void {
+    if (parseVersion(x.fmi_version) == null) reporter(`Unknown FMI version '${x.fmi_version}'`, ReportLevel.Major);
+    if (parseVariant(x.variant) == null) reporter(`Unknown FMI variant '${x.variant}'`, ReportLevel.Major);
+    if (parsePlatform(x.platform) == null) reporter(`Unknown FMI platform '${x.platform}'`, ReportLevel.Major);
+    let passedFile = path.join(x.dir, "passed");
+    if (fs.existsSync(passedFile)) {
+        let csvName = x.model + "_out.csv";
+        if (!fs.existsSync(path.join(x.dir, csvName))) reporter(`No CSV file named ${csvName} found in ${x.dir}`, ReportLevel.Minor);
+    }
+    if (!fs.existsSync(path.join(x.dir, "ReadMe.txt")) && !fs.existsSync(path.join(x.dir, "ReadMe.pdf"))) {
+        reporter(`No ReadMe.txt or ReadMe.pdf found in ${x.dir}`, ReportLevel.Minor);
+    }
+}
+

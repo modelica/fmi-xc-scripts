@@ -7,7 +7,6 @@ import {
 } from '@modelica/fmi-data';
 
 import { Reporter, ReportLevel } from './report';
-import { ExportDetails } from './exports';
 import { ImportDetails } from './imports';
 
 import * as fs from 'fs';
@@ -52,59 +51,6 @@ export function validate<T>(array: Array<T>, validate: (x: T, report: Reporter) 
         if (count == 0) ret.push(elem);
     })
     return ret;
-}
-
-/**
- * Return a function that can be used to validate ExportDetails.
- * 
- * @param local List of tools local to the repository currently being processed.
- */
-export function validateExport(local: string[]) {
-    return (x: ExportDetails, reporter: Reporter): void => {
-        let idx = local.indexOf(x.export_tool);
-        if (idx == -1) {
-            let names = local.join(", ");
-            reporter(`Tool '${x.export_tool}' is not among list of tools defined in this repo: ${names}`, ReportLevel.Major);
-        }
-        if (parseVersion(x.fmi_version) == null) reporter(`Unknown FMI version '${x.fmi_version}'`, ReportLevel.Major);
-        if (parseVariant(x.variant) == null) reporter(`Unknown FMI variant '${x.variant}'`, ReportLevel.Major);
-        if (parsePlatform(x.platform) == null) reporter(`Unknown FMI platform '${x.platform}'`, ReportLevel.Major);
-        let requiredFiles = [
-            '.fmu', '_ref.csv', '_in.csv', '_cc.log', '_cc.csv', '_ref.opt',
-        ];
-        // TODO: Check for Readme?
-        // TODO: Check for batch
-        for (let suffix of requiredFiles) {
-            let fileName = `${x.model}${suffix}`
-            if (!fs.existsSync(path.join(x.dir, fileName))) reporter(`Expected to find a file named ${fileName} in ${x.dir}`, ReportLevel.Major);
-        }
-        if (!fs.existsSync(path.join(x.dir, "ReadMe.txt")) && !fs.existsSync(path.join(x.dir, "ReadMe.pdf"))) {
-            reporter(`No ReadMe.txt or ReadMe.pdf found in ${x.dir}`, ReportLevel.Minor);
-        }
-        if (!fs.existsSync(path.join(x.dir, `${x.model}_cc.bat`)) && !fs.existsSync(path.join(x.dir, `${x.model}_cc.sh`))) {
-            reporter(`No shell script (.bat or .sh) found in ${x.dir}`, ReportLevel.Minor);
-        }
-    }
-}
-
-/**
- * Returns a function that validates import details.
- * 
- * @param local List of tools local to the repository currently being processed.
- * @param tools List of all tools
- */
-export function validateImport(x: ImportDetails, reporter: Reporter): void {
-    if (parseVersion(x.fmi_version) == null) reporter(`Unknown FMI version '${x.fmi_version}'`, ReportLevel.Major);
-    if (parseVariant(x.variant) == null) reporter(`Unknown FMI variant '${x.variant}'`, ReportLevel.Major);
-    if (parsePlatform(x.platform) == null) reporter(`Unknown FMI platform '${x.platform}'`, ReportLevel.Major);
-    let passedFile = path.join(x.dir, "passed");
-    if (fs.existsSync(passedFile)) {
-        let csvName = x.model + "_out.csv";
-        if (!fs.existsSync(path.join(x.dir, csvName))) reporter(`No CSV file named ${csvName} found in ${x.dir}`, ReportLevel.Minor);
-    }
-    if (!fs.existsSync(path.join(x.dir, "ReadMe.txt")) && !fs.existsSync(path.join(x.dir, "ReadMe.pdf"))) {
-        reporter(`No ReadMe.txt or ReadMe.pdf found in ${x.dir}`, ReportLevel.Minor);
-    }
 }
 
 /**

@@ -1,7 +1,7 @@
 import { ExportDetails, Predicate } from './exports';
 import { getDirectories } from './utils';
 import { Reporter, ReportLevel } from './report';
-import { parsePlatform, parseVariant, parseVersion } from '@modelica/fmi-data';
+import { parsePlatform, parseVariant, parseVersion, CrossCheckResult, CrossCheckTable, CrossCheckStatus } from '@modelica/fmi-data';
 
 import * as path from 'path';
 import * as fs from 'fs';
@@ -65,6 +65,18 @@ export async function getImports(root: string, pred?: Predicate<ImportDetails>):
     return ret;
 }
 
+/**
+ * Transform file system data into a CrossCheckStatus enum
+ * @param dir 
+ * @param reporter 
+ */
+function parseResult(dir: string, reporter: Reporter): CrossCheckStatus {
+    if (fs.existsSync(path.join(dir, "passed"))) return "passed";
+    if (fs.existsSync(path.join(dir, "failed"))) return "failed";
+    if (fs.existsSync(path.join(dir, "rejected"))) return "rejected";
+    reporter(`No result file name 'passed', 'failed' or 'rejected' found in ${dir}`, ReportLevel.Minor);
+    return "failed";
+}
 
 /**
  * Returns a function that validates import details.
@@ -86,3 +98,47 @@ export function validateImport(x: ImportDetails, reporter: Reporter): void {
     }
 }
 
+/**
+ * Create a CrossCheckTable where the local tools are the importers.
+ * 
+ * @param imports All import related data for the local tools
+ * @param reporter 
+ */
+export function buildCrossCheckTable(imports: ImportDetails[], vendorId: string, reporter: Reporter): CrossCheckTable {
+    // Loop over all imports
+    importDebug("Building cross-check result table");
+
+    let table: CrossCheckTable = [];
+    imports.forEach((imp): void => {
+        let version = parseVersion(imp.fmi_version);
+        let variant = parseVariant(imp.variant);
+        let platform = parsePlatform(imp.platform);
+        if (version == null) {
+            reporter("Unknown version " + imp.fmi_version + " found in " + imp.dir + ", skipping", ReportLevel.Major);
+            return;
+        }
+        if (variant == null) {
+            reporter("Unknown variant " + imp.variant + " found in " + imp.dir + ", skipping", ReportLevel.Major);
+            return;
+        }
+        if (platform == null) {
+            reporter("Unknown version " + imp.platform + " found in " + imp.dir + ", skipping", ReportLevel.Major);
+            return;
+        }
+        let status = parseResult(imp.dir, reporter);
+        let ret: CrossCheckResult = {
+            version: version,
+            variant: variant,
+            platform: platform,
+            vendorId: vendorId,
+            import_tool: imp.import_tool,
+            import_version: imp.import_version,
+            export_tool: imp.export_tool,
+            export_version: imp.export_version,
+            model: imp.model,
+            status: status,
+        }
+        table.push(ret);
+    });
+    return table;
+}

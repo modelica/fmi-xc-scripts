@@ -1,10 +1,10 @@
-import { findFilesWithSuffix, validate, buildCrossCheckTable } from './utils';
+import { findFilesWithSuffix, validate } from './utils';
 import { buildToolSummaryFromToolFile } from '../io';
 import { Reporter, ReportLevel } from './report';
 import { Database } from '../db';
 import { FMUTable, parsePlatform, parseVariant, parseVersion, CrossCheckTable } from '@modelica/fmi-data';
 import { getExports, validateExport } from './exports';
-import { getImports, validateImport } from './imports';
+import { getImports, validateImport, buildCrossCheckTable } from './imports';
 import { exportDir, crossCheckDir } from './defaults';
 import * as debug from 'debug';
 import * as path from 'path';

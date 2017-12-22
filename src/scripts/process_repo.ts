@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 
 import * as yargs from 'yargs';
-import { processRepo, reporter, ReportLevel, enumerateErrors, loadVendorData } from '../core';
+import { processRepo, reporter, ReportLevel, enumerateErrors } from '../core';
+import { loadVendorData } from '../io';
 import { createDatabase } from '../db';
 
 import * as debug from 'debug';
@@ -38,19 +39,26 @@ let report = reporter(min);
 
 
 async function run() {
+    // Create and open database
     let db = createDatabase(argv.db, argv.output, argv.repo, argv.branch);
     await db.open();
     processDebug("Database opened...");
+
+    // Loop over all directories to be processed
     for (let i = 0; i < dirs.length; i++) {
         let dir = dirs[i];
         processDebug("Processing contents of directory: %s", dir);
         try {
+            // Load the vendor data for this repository
             let vendor = loadVendorData(dir);
+            // Process contents and update database
             await processRepo(db, dir, vendor.vendorId, argv.imports, report.reporter);
         } catch (e) {
             console.error("Error while processing directory '" + dir + "', skipping: " + e.message);
         }
     }
+
+    // Commit changes and close database
     await db.commit();
     processDebug("...committed changes to database...");
     await db.close();

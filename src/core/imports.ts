@@ -2,6 +2,9 @@ var find = require('findit');
 var path = require('path');
 import { ExportDetails, Predicate } from './exports';
 
+import * as debug from 'debug';
+const importDebug = debug("fmi:imports");
+
 /**
  * Details about imported FMUs.  It turns out they are the same details we collect
  * for exported FMUs + information about the importing tool.
@@ -45,8 +48,10 @@ export function getImports(root: string, pred?: Predicate<ImportDetails>): Promi
         let finder = find(root, {});
         let ret: ImportDetails[] = [];
 
+        importDebug("Searching for import directories in %s", root);
         // Handle each directory
         finder.on('directory', (dir: string) => {
+            importDebug("  Considering %s", dir);
             // Identify relative path and then split it into components
             let rel = path.relative(root, dir);
             let parts = rel.split("/");
@@ -54,10 +59,16 @@ export function getImports(root: string, pred?: Predicate<ImportDetails>): Promi
             // If the path has 8 parts, assume this directory is corresponds to
             // an imported FMUs
             if (parts.length == 8) {
+                importDebug("    This is an import directory, collecting details");
                 let details = parseImport(dir, rel, parts);
                 if (predicate(details)) {
+                    importDebug("      Matches predicate");
                     ret.push(details);
+                } else {
+                    importDebug("      Doesn't match predicate");
                 }
+            } else {
+                importDebug("    This is not an import directory");
             }
         })
 

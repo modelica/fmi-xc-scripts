@@ -1,6 +1,8 @@
-import { infoFiles, parseInfo, validate, validateExport, validateImport, buildTable, Reporter, ReportLevel } from './utils';
+import { findFilesWithSuffix, validate, validateExport, validateImport, buildCrossCheckTable } from './utils';
+import { buildToolSummaryFromToolFile } from '../io';
+import { Reporter, ReportLevel } from './report';
 import { Database } from '../db';
-import { ToolSummary, FMUTable, parsePlatform, parseVariant, parseVersion, CrossCheckTable } from '@modelica/fmi-data';
+import { FMUTable, parsePlatform, parseVariant, parseVersion, CrossCheckTable } from '@modelica/fmi-data';
 import { getExports } from './exports';
 import { getImports } from './imports';
 import { exportDir, crossCheckDir } from './defaults';
@@ -32,20 +34,14 @@ export async function processRepo(db: Database, dir: string, vendorId: string, i
 
     // Read tool files and fold them into the tool map as well (making sure the tools we define
     // in this repo haven't already been defined in a diffrent repo).
-    let tools = infoFiles(dir);
-    let summaries: ToolSummary[] = [];
-    let local: string[] = [];
+    let tools = findFilesWithSuffix(dir, "tool");
     stepsDebug("Info files found: %j", tools);
-    tools.forEach((toolFile) => {
-        let config = parseInfo(path.join(dir, toolFile), vendorId);
-        dataDebug("Loaded the following tool configuration data: %o", config);
-        stepsDebug("Adding tool '%s' to tool map", config.id);
-        local.push(config.id);
-        summaries.push(config);
-    });
 
-    // Write out: tools.json (ToolsTable)
-    await db.updateTools(Array.from(summaries), vendorId);
+    let summaries = tools.map((toolFile) => buildToolSummaryFromToolFile(toolFile, report));
+    let local = summaries.map((data) => data.id);
+
+    // Update database with tool information
+    await db.updateTools(summaries, vendorId);
 
     // Process exports by searching the exports directory (see `exportDir` constant)
     //   Find all directories of appropriate length
@@ -62,7 +58,7 @@ export async function processRepo(db: Database, dir: string, vendorId: string, i
             let fmus: FMUTable = [];
             //   Build FMUTable
             exports.forEach((ex) => {
-                let version = parseVersion(ex.fmi_version); // TODO: change to ex.version
+                let version = parseVersion(ex.fmi_version);
                 let variant = parseVariant(ex.variant);
                 let platform = parsePlatform(ex.platform);
                 if (version == null) {
@@ -105,7 +101,7 @@ export async function processRepo(db: Database, dir: string, vendorId: string, i
             let allImports = await getImports(xcdir)
             let imports = validate(allImports, validateImport, report);
             dataDebug("Import directories: %o", imports);
-            let xc: CrossCheckTable = buildTable(imports, vendorId, report);
+            let xc: CrossCheckTable = buildCrossCheckTable(imports, vendorId, report);
 
             // Write out: xc_results.json (CrossCheckTable)
             await db.updateCrossChecks(xc, vendorId);

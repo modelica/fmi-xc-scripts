@@ -1,13 +1,12 @@
 /**
  * This file contains various utility functions shared by other packages.
  */
-var ini = require('ini');
 
 import {
-    ToolSummary, VariantSupport, Status, parseVersion, parseVariant, parsePlatform,
-    CrossCheckTable, CrossCheckResult, CrossCheckStatus, VendorDetails,
+    parseVersion, parseVariant, parsePlatform, CrossCheckTable, CrossCheckResult, CrossCheckStatus,
 } from '@modelica/fmi-data';
 
+import { Reporter, ReportLevel } from './report';
 import { ExportDetails } from './exports';
 import { ImportDetails } from './imports';
 
@@ -18,163 +17,13 @@ import * as debug from 'debug';
 const utilDebug = debug('fmi:utils');
 
 /**
- * Establishes a "level" for flagging concerns while processing.
- */
-export enum ReportLevel {
-    Minor = 0,
-    Major = 1,
-    Fatal = 2,
-}
-
-/**
- * Defines the type for callbacks used to report issues.
- */
-export type Reporter = (x: string, level: ReportLevel) => void;
-
-/**
- * This function finds all info files in the specified directory.
+ * This function finds all files with the given sufficx in the specified directory.
  * 
  * @param dir Directory to search
  */
-export function infoFiles(dir: string): string[] {
+export function findFilesWithSuffix(dir: string, suffix: string): string[] {
     let contents = fs.readdirSync(dir);
-    return contents.filter((name) => name.endsWith("info"));
-}
-
-/**
- * This list of required fields in the ".info" files.
- */
-const requiredFields = ["name", "href",
-    // "import_me", "export_me", "slave_cs", "master_cs",
-    // "import_me_20", "export_me_20", "slave_cs_20", "master_cs_20",
-    // "email"
-];
-
-function parseStatus(field: string, obj: { [key: string]: string }): VariantSupport {
-    if (!obj.hasOwnProperty(field)) {
-        return {
-            status: Status.Unsupported,
-            num: 0,
-            platforms: {},
-        }
-    }
-    let str = obj[field];
-    if (str == "A") {
-        return {
-            status: Status.Available,
-            num: 0,
-            platforms: {},
-        }
-    }
-    if (str == "") {
-        return {
-            status: Status.Unsupported,
-            num: 0,
-            platforms: {},
-        }
-    }
-    if (str == "P") {
-        return {
-            status: Status.Planned,
-            num: 0,
-            platforms: {},
-        }
-    }
-    console.warn("Unexpected status for '" + field + "': '" + str + "'");
-    return {
-        status: Status.Unsupported,
-        num: 0,
-        platforms: {},
-    }
-}
-
-/**
- * Build ToolSummary data from information contained in the .info file
- * 
- * @param filename .info file to read
- * @param vendorId Id for vendor being processed
- */
-export function parseInfo(filename: string, vendorId: string): ToolSummary {
-    let contents = fs.readFileSync(filename, 'utf-8');
-    let obj = ini.parse(contents);
-
-    let basename = path.basename(filename);
-    if (!basename.endsWith(".info")) throw new Error("Expected tool information to be contained in a file with the .info suffix");
-
-    let toolId = basename.slice(0, basename.length - 5);
-
-    if (!obj.hasOwnProperty("Tool")) throw new Error("No 'Tool' section found in " + filename);
-    obj = obj["Tool"];
-
-    requiredFields.forEach((field) => {
-        if (!obj.hasOwnProperty(field)) throw new Error("Required field '" + field + "' not found in " + filename);
-    });
-
-    return {
-        id: toolId,
-        displayName: obj["name"],
-        homepage: obj["href"] || "",
-        email: obj["email"] || "",
-        note: obj["note"] || "",
-        fmi1: {
-            import: parseStatus("import_me", obj),
-            export: parseStatus("export_me", obj),
-            slave: parseStatus("slave_cs", obj),
-            master: parseStatus("master_cs", obj),
-        },
-        fmi2: {
-            import: parseStatus("import_me_20", obj),
-            export: parseStatus("export_me_20", obj),
-            slave: parseStatus("slave_cs_20", obj),
-            master: parseStatus("master_cs_20", obj),
-        },
-        vendorId: vendorId,
-    }
-}
-
-/**
- * Build ToolSummary data from information contained in the .tool file (new format)
- * 
- * @param filename .tool file to read
- * @param vendorId Id for vendor being processed
- */
-export function parseTool(filename: string): ToolSummary {
-    let contents = fs.readFileSync(filename, 'utf-8');
-    let obj = ini.parse(contents);
-    utilDebug("Tool file %s contains: %j", filename, obj);
-
-    let basename = path.basename(filename);
-    if (!basename.endsWith(".tool")) throw new Error("Expected tool information to be contained in a file with the .tool suffix");
-
-    let toolId = basename.slice(0, basename.length - 5);
-
-    if (!obj.hasOwnProperty("Tool")) throw new Error("No 'Tool' section found in " + filename);
-    obj = obj["Tool"];
-
-    requiredFields.forEach((field) => {
-        if (!obj.hasOwnProperty(field)) throw new Error("Required field '" + field + "' not found in " + filename);
-    });
-
-    return {
-        id: toolId,
-        displayName: obj["name"],
-        homepage: obj["href"] || "",
-        email: obj["email"] || "",
-        note: obj["note"] || "",
-        fmi1: {
-            import: parseStatus("import_me", obj),
-            export: parseStatus("export_me", obj),
-            slave: parseStatus("slave_cs", obj),
-            master: parseStatus("master_cs", obj),
-        },
-        fmi2: {
-            import: parseStatus("import_me_20", obj),
-            export: parseStatus("export_me_20", obj),
-            slave: parseStatus("slave_cs_20", obj),
-            master: parseStatus("master_cs_20", obj),
-        },
-        vendorId: obj["vendorId"],
-    }
+    return contents.filter((name) => name.endsWith(suffix));
 }
 
 /**
@@ -263,7 +112,7 @@ export function validateImport(x: ImportDetails, reporter: Reporter): void {
  * @param imports All import related data for the local tools
  * @param reporter 
  */
-export function buildTable(imports: ImportDetails[], vendorId: string, reporter: Reporter): CrossCheckTable {
+export function buildCrossCheckTable(imports: ImportDetails[], vendorId: string, reporter: Reporter): CrossCheckTable {
     // Loop over all imports
     utilDebug("Building cross-check result table");
 
@@ -313,75 +162,4 @@ function parseResult(dir: string, reporter: Reporter): CrossCheckStatus {
     if (fs.existsSync(path.join(dir, "rejected"))) return "rejected";
     reporter(`No result file name 'passed', 'failed' or 'rejected' found in ${dir}`, ReportLevel.Minor);
     return "failed";
-}
-
-/**
- * Yields a reporter that doesn't repeat itself
- * 
- * @export
- * @returns 
- */
-export function reporter(min: ReportLevel) {
-    let reported = new Set<string>();
-    let errors: { [vendor: string]: string[] } = {};
-    let vendor: string = "";
-    let reporter: Reporter = (msg: string, level: ReportLevel) => {
-        if (reported.has(msg)) return;
-        if (level >= min) {
-            reported.add(msg);
-            if (level >= ReportLevel.Fatal) {
-                console.error("ERROR: " + msg);
-            } else {
-                console.warn("WARNING: " + msg);
-            }
-        }
-        if (level >= ReportLevel.Fatal) {
-            if (!errors.hasOwnProperty(vendor)) {
-                errors[vendor] = [];
-            }
-            errors[vendor].push(msg);
-        }
-    }
-    return {
-        reporter: reporter,
-        errors: errors,
-    }
-}
-
-export function enumerateErrors(errors: { [vendor: string]: string[] }) {
-    let count = 0;
-    let vendors = Object.keys(errors);
-    for (let i = 0; i < vendors.length; i++) {
-        let vendor = vendors[i];
-        let msgs = errors[vendor];
-        if (msgs.length == 0) continue;
-        console.error("Errors for vendor: " + vendor);
-        for (let j = 0; j < msgs.length; j++) {
-            let msg = msgs[j];
-            console.error("  " + msg);
-            count++;
-        }
-    }
-    return count;
-}
-
-function readProp(obj: any, prop: string, def?: string): string {
-    if (obj.hasOwnProperty(prop)) return obj[prop] as string;
-    if (def == undefined) throw new Error("No property '" + prop + "' found in: " + JSON.stringify(obj));
-    return def;
-}
-
-export function loadVendorData(dir: string): VendorDetails {
-    let inifile = path.join(dir, "vendor.ini")
-    let contents = fs.readFileSync(inifile, 'utf-8');
-    let obj = ini.parse(contents);
-    utilDebug("Vendor object: %j", obj);
-
-    return {
-        vendorId: readProp(obj, "vendorId"),
-        displayName: readProp(obj, "displayName"),
-        href: readProp(obj, "href"),
-        email: readProp(obj, "email"),
-        repo: readProp(obj, "repo"),
-    }
 }

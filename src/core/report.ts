@@ -57,14 +57,18 @@ export function logReporter(min: ReportLevel, logfile: string) {
     let reported = new Set<string>();
     let errors: { [vendor: string]: string[] } = {};
     let vendor: string = "";
+
+    if (fs.existsSync(logfile)) {
+        fs.unlinkSync(logfile);
+    }
     let reporter: Reporter = (msg: string, level: ReportLevel) => {
         if (reported.has(msg)) return;
         if (level >= min) {
             reported.add(msg);
             if (level >= ReportLevel.Fatal) {
-                fs.appendFileSync(logfile, "ERROR: " + msg);
+                fs.appendFileSync(logfile, "ERROR: " + msg + "\n");
             } else {
-                fs.appendFileSync(logfile, "WARNING: " + msg);
+                fs.appendFileSync(logfile, "WARNING: " + msg + "\n");
             }
         }
         if (level >= ReportLevel.Fatal) {
@@ -93,6 +97,9 @@ export function enumerateErrors(errors: { [vendor: string]: string[] }) {
             console.error("  " + msg);
             count++;
         }
+    }
+    if (count == 0) {
+        console.log("Processing completed without any errors");
     }
     return count;
 }

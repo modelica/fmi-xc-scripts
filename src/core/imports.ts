@@ -36,40 +36,25 @@ function parseImport(dir: string, rel: string, parts: string[]): ImportDetails {
     };
 }
 
-/**
- * Locate all imported FMUs in a given directory (subject to a given criteria)
- * 
- * @param root Directory to search for imported FMUs
- * @param pred A predicate for filter which imported FMUs to consider
- */
-export function getImports(root: string, pred?: Predicate<ImportDetails>): Promise<ImportDetails[]> {
-    let predicate: Predicate<ImportDetails> = pred || (() => true);
+interface DirectoryDetails {
+    dir: string;
+    rel: string;
+    parts: string[];
+}
+
+function getDirectories(root: string): Promise<DirectoryDetails[]> {
     return new Promise((resolve, reject) => {
         let finder = find(root, {});
-        let ret: ImportDetails[] = [];
+        let ret: DirectoryDetails[] = [];
 
-        importDebug("Searching for import directories in %s", root);
+        importDebug("  Searching for directories in %s", root);
         // Handle each directory
         finder.on('directory', (dir: string) => {
-            importDebug("  Considering %s", dir);
             // Identify relative path and then split it into components
             let rel = path.relative(root, dir);
             let parts = rel.split("/");
 
-            // If the path has 8 parts, assume this directory is corresponds to
-            // an imported FMUs
-            if (parts.length == 8) {
-                importDebug("    This is an import directory, collecting details");
-                let details = parseImport(dir, rel, parts);
-                if (predicate(details)) {
-                    importDebug("      Matches predicate");
-                    ret.push(details);
-                } else {
-                    importDebug("      Doesn't match predicate");
-                }
-            } else {
-                importDebug("    This is not an import directory");
-            }
+            ret.push({ dir: dir, rel: rel, parts: parts });
         })
 
         // Reject the promise if there is an error traversing the directory structure
@@ -79,7 +64,35 @@ export function getImports(root: string, pred?: Predicate<ImportDetails>): Promi
 
         // Resolve the promise once we have complete traversing the directory structure
         finder.on('end', () => {
+            cachedDirectories[root] = ret;
             resolve(ret);
         })
     })
+}
+
+const cachedDirectories: { [dir: string]: DirectoryDetails[] } = {};
+
+/**
+ * Locate all imported FMUs in a given directory (subject to a given criteria)
+ * 
+ * @param root Directory to search for imported FMUs
+ * @param pred A predicate for filter which imported FMUs to consider
+ */
+export async function getImports(root: string, pred?: Predicate<ImportDetails>): Promise<ImportDetails[]> {
+    let predicate: Predicate<ImportDetails> = pred || (() => true);
+    importDebug("Looking for imports in '%s'", root);
+    let dirs = cachedDirectories.hasOwnProperty(root) ? cachedDirectories[root] : await getDirectories(root);
+    let ret: ImportDetails[] = [];
+    importDebug("  Looking for directories that match our selection criteria");
+    dirs.forEach((directory) => {
+        // If the path has 8 parts, assume this directory is corresponds to
+        // an imported FMUs
+        if (directory.parts.length == 8) {
+            let details = parseImport(directory.dir, directory.rel, directory.parts);
+            if (predicate(details)) {
+                ret.push(details);
+            }
+        }
+    })
+    return ret;
 }

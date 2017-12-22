@@ -95,6 +95,7 @@ function generateToolFile(root: string, repo: string, legacyToolFile: string, ve
         let legacy = parseLegacyToolFile(fullLegacyToolFileName);
         createDebug("    Legacy tool data: %j", legacy);
         let next = upgradeToolData(vendor, legacy);
+        createDebug("    New .tool file content: %j", next);
         writeToolFile(dst, next);
         createDebug("Translated legacy tool information file from '%s' to '%s'", fullLegacyToolFileName, dst);
     } else {

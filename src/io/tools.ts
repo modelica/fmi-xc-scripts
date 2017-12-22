@@ -53,20 +53,6 @@ export function buildToolSummaryFromToolFile(filename: string, reporter: Reporte
 }
 
 export function writeToolFile(file: string, data: ToolFile) {
-    //     let content = `displayName=${data.displayName}
-    // homepage=${data.homepage}
-    // note=${data.note}
-    // email=${data.email}
-    // [FMI1_0]`;
-    //     if (data.FMI1_0.import) content += "import=" + data.FMI1_0.import + "\n";
-    //     if (data.FMI1_0.export) content += "export=" + data.FMI1_0.export + "\n";
-    //     if (data.FMI1_0.slave) content += "slave=" + data.FMI1_0.slave + "\n";
-    //     if (data.FMI1_0.master) content += "master=" + data.FMI1_0.master + "\n";
-    //     content += "[FMI2_0]\n";
-    //     if (data.FMI2_0.import) content += "import=" + data.FMI2_0.import + "\n";
-    //     if (data.FMI2_0.export) content += "export=" + data.FMI2_0.export + "\n";
-    //     if (data.FMI2_0.slave) content += "slave=" + data.FMI2_0.slave + "\n";
-    //     if (data.FMI2_0.master) content += "master=" + data.FMI2_0.master + "\n";
     let content = ini.stringify(data);
     fs.writeFileSync(file, content);
 }

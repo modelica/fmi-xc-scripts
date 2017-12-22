@@ -2,21 +2,13 @@
 
 import * as yargs from 'yargs';
 import { createRepo, reporter, ReportLevel, enumerateErrors } from '../core';
-import { VendorDetails } from '@modelica/fmi-data';
+import { createVendorDataFromLegacyToolFile } from '../io';
 
 let argv = yargs
-    .string('vendor')
-    .default('vendor', null)
     .string('tool')
     .default('tool', null)
     .string('repo')
     .default('repo', null)
-    .string('repouri')
-    .default('repouri', null)
-    .string('email')
-    .default('email', null)
-    .string('href')
-    .default('href', null)
     .string('root')
     .default('root', null)
     .number('pedantic')
@@ -35,11 +27,6 @@ if (!argv.tool) {
     process.exit(1);
 }
 
-if (!argv.vendor) {
-    console.error("No value provided for --vendor");
-    process.exit(2);
-}
-
 if (!argv.repo) {
     console.error("No value provided for --repo");
     process.exit(3);
@@ -50,20 +37,12 @@ if (!argv.root) {
     process.exit(3);
 }
 
-if (!argv.repouri) {
-    console.error("No value provided for --repouri");
-    process.exit(4);
+async function run() {
+    let vendor = createVendorDataFromLegacyToolFile(argv.root, `${argv.tool}.info`);
+    return createRepo(vendor, argv.tool, argv.repo, argv.root, report.reporter);
 }
 
-let vendor: VendorDetails = {
-    vendorId: argv.vendor,
-    displayName: argv.vendor,
-    href: argv.href || "",
-    email: argv.email || "",
-    repo: argv.repouri,
-}
-
-createRepo(vendor, argv.tool, argv.repo, argv.root, report.reporter).then(() => {
+run().then(() => {
     process.exit(enumerateErrors(report.errors));
 }).catch((e) => {
     console.error("createRepo failed: " + e.message);

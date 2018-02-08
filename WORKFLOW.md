@@ -404,24 +404,24 @@ allows us to declaratively model the transformation of state data into derived
 data but also can (by leveraging the packages `react` and `mobx-react`)
 efficiently determine when and where data in the UI needs to be updated.
 
-All issues with visualization state are handled by the `ViewState` class in `@modelica/fmi-components`.
+All issues with visualization state are handled by the `ViewState` class in `@modelica/fmi-widgets`.
 
 ## Widgets
 
 Actual rendering is done using React and all UI components are written in
 TypeScript. All rendering starts with the `SupportMatrixViewer` component in
-`@modelica/fmi-components`. This component, in turn, is composed of other
+`@modelica/fmi-widgets`. This component, in turn, is composed of other
 components that focus on specific aspects of the UI (_e.g.,_ filter settings,
 overlays, tables, _etc._). The details of the complete component tree are
 beyond the scope of this document. The goal in this subsection is merely to
 define the top-level component responsible for rendering and to indicate where
 it can be found.
 
-The `@modelica/fmi-components` package is responsible for all the Javascript
+The `@modelica/fmi-widgets` package is responsible for all the Javascript
 that gets loaded on the FMI web site. That Javascript code is contained in a
 single file file entitled `build/bundle.js`. This file is produced by running
 the command `yarn build` from the root directory of the
-`@modelica/fmi-components` package. It should be noted that another file,
+`@modelica/fmi-widgets` package. It should be noted that another file,
 `build/bundle.css` is also produced by this process (although currently not used
 on the FMI web site). The `build/bundle.js` file should be copied to
 `static/js/bundle.js` in the FMI web site repository for deployment to the FMI
@@ -437,7 +437,7 @@ NPM packages. The follow describes each package:
   ([npm](https://www.npmjs.com/package/@modelica/fmi-data), [github](https://github.com/modelica/fmi-data))
 * `@modelica/fmi-xc-script` - Repository where this file and all scripts for
   processing raw vendor data into canonical data are stored.
-  `@modelica/fmi-components` - Repository where all code for **rendering** of
+  `@modelica/fmi-widgets` - Repository where all code for **rendering** of
   canonical data and `MatrixReport` data can be found.
 
 # Conclusion

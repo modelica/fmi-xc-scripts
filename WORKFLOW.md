@@ -78,18 +78,18 @@ make things more logical, consistent or structured. Scripts were developed
 legacy data into the new format.
 
 Vendors are responsible for providing two types of files. The first type
-of file is the vendor information file. This file, named `vendor.ini`,
+of file is the vendor information file. This file, named `<VendorID>.vendor`,
 provides information on the vendor. There is only one vendor information
-file. The other type of file is the `.info` file. One file of this type
+file. The other type of file is the `.tool` file. One file of this type
 must be provided for each tool the vendor is publishing data for.
 
 ## Schemas
 
 This section describes the format of the files provided by vendors.
 
-### `vendor.ini`
+### `.vendor` Files
 
-The following is a sample `vendor.ini`. The text inside the `<>`s describes
+The following is a sample `<VendorID>.vendor`. The text inside the `<>`s describes
 the text that should be placed there by the vendor.
 
 ```ini
@@ -103,7 +103,7 @@ repo=<GitHub repository where this file is hosted>
 The TypeScript type associated with this data is the `VendorDetails` interface
 found in the NPM package `@modelica/fmi-data`.
 
-### `*.info`
+### `.tool` Files
 
 The following is a sample tool file. The text inside the `<>`s describes
 the text that should be placed there by the vendor.
@@ -139,8 +139,8 @@ found in the NPM package `@modelica/fmi-data`.
 
 ### Information files
 
-Each vendor should provide a repository that includes exactly one `vendor.ini`
-file and one `<ToolID>.info` file for each tool (where `<ToolId>` should be
+Each vendor should provide a repository that includes exactly one `.vendor`
+file and one `<ToolID>.tool` file for each tool (where `<ToolId>` should be
 replaced with an actual identifier for the tool). Note that this tool
 identifier must be unique across all vendors (_i.e.,_ no two vendors can have
 tools with the same tool id). The validation scripts will check to ensure this
@@ -172,7 +172,7 @@ Test_FMUs/
 ...where `<FMI_Version>` has the possible values `FMI_1.0` or `FMI_2.0`,
 `<FMI_Variant>` can be either `CoSimulation` or `ModelExchange`, `Platform` must
 be one of: `win32`, `win64`, `linux32`, `linux64`, `darwin32`, `darwin64` or `c-code`.
-The `<ToolID>` **must** match the identifier used for the associated `*.info` file.
+The `<ToolID>` **must** match the identifier used for the associated `*.tool` file.
 The `<Tool_Version>` string is up to the vendor to provide. Finally, the `<Name>`
 value should be the name of the supplied FMU with the `.fmu` suffix stripped.
 
@@ -227,7 +227,7 @@ is serialized into a file or persisteded in a proper database).
 
 The canonical tool data is represented by the `ToolSummary` type in the
 `@modelica/fmi-data` package. This data structure is very similar to the
-[described previously](#schemas) raw tool data found in `.info` files. The
+[described previously](#schemas) raw tool data found in `.tool` files. The
 main exception (apart superficial differences in names of fields and possible
 values) is that nothing is "optional" in the canonical form.
 
@@ -260,7 +260,7 @@ section can be found in that package.
 
 ## Parsing
 
-Tool data (from `.info` files) is parsed by the `parseToolFile` function.
+Tool data (from `.tool` files) is parsed by the `parseToolFile` function.
 **Note** that the tool identifier is not parsed from the contents of the file
 but rather from the filename itself.
 

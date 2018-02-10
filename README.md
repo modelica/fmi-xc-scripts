@@ -40,8 +40,10 @@ To simple test processing of a directory defaults values should be sufficient fo
 $ process_repo <DIR>
 ```
 
-In this caes, no legacy data is read in and none of the data created will be written. To save the resulting
-data, simply specify an output directory, _e.g.,_
+In this case, no legacy data is read in and none of the data created will be written. **This is how vendors
+can perform some basic validation on their data.**
+
+To save the resulting data, simply specify an output directory, _e.g.,_
 
 ```sh
 $ process_repo <DIR> --output <OUTPUT_DIRECTORY>
@@ -53,16 +55,8 @@ To process in the context of legacy data, the `github` option can be used with w
 $ process_repo <DIR> --db github
 ```
 
-If no value is provided for the `GITHUB_TOKEN` environment variable, the current data will be ready from
-GitHub but **no data will be written**. Also, GitHub enforces limits on API calls for anonymous access.
-So repeated use of this option could result in the message:
-
-```
-
-```
-
-By setting the `GITHUB_TOKEN` environment variable to a valid GitHub API token (with appropriate permissions),
-the data can then be written back to GitHub.
+**NB** If you have permission to write to the repository specified by the `--repo` flag, your changes **will be committed
+back to the repo**.
 
 ## `initialize_repo`
 

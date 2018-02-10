@@ -1,21 +1,21 @@
-import * as path from 'path';
-import * as fs from 'fs-extra';
-import { getExports } from './exports';
-import { getImports } from './imports';
-import { exportDir, crossCheckDir } from './defaults';
-import { writeToolFile, parseLegacyToolFile, upgradeToolData } from '../io';
-import { Reporter, ReportLevel } from './report';
-import { VendorDetails } from '@modelica/fmi-data';
+import * as path from "path";
+import * as fs from "fs-extra";
+import { getExports } from "./exports";
+import { getImports } from "./imports";
+import { exportDir, crossCheckDir } from "./defaults";
+import { writeToolFile, parseLegacyToolFile, upgradeToolData } from "../io";
+import { Reporter, ReportLevel } from "./report";
+import { VendorDetails } from "@modelica/fmi-data";
 
-import * as debug from 'debug';
-import * as ini from 'ini';
+import * as debug from "debug";
+import * as ini from "ini";
 
 const createDebug = debug("fmi:create-repo");
 
 /**
  * Search the legacy SVN directory and extract data about a specific tool and then
  * reconstitute that data in the new vendor specific repo format.
- * 
+ *
  * @param tool Tool whose repository we are creating
  * @param repo Directory (on the file system) that contains the vendor specific repository data
  * @param root Root of the legacy SVN file structure
@@ -38,12 +38,12 @@ export async function createRepo(vendor: VendorDetails, tool: string, repo: stri
     // Find the .info file for this tool and copy it into the vender repository
     createDebug("Look for tool '%s'", tool);
     let legacyToolFile = `${tool}.info`;
-    generateToolFile(root, repo, legacyToolFile, vendor);
+    generateToolFile(root, repo, legacyToolFile);
 
     // Find all exports from this tool and copy them into the vendor specific repository
     createDebug("Collecting export directories for %s", tool);
     try {
-        let edetails = await getExports(FMUs, (d) => d.export_tool == tool);
+        let edetails = await getExports(FMUs, d => d.export_tool == tool);
         copyFiles(exportDir, edetails, repo);
         createDebug("  Copied %d export directories", edetails.length);
     } catch (e) {
@@ -54,7 +54,7 @@ export async function createRepo(vendor: VendorDetails, tool: string, repo: stri
     // new vendor specific repository
     createDebug("Collecting import directories for %s", tool);
     try {
-        let idetails = await getImports(crossChecks, (d) => d.import_tool == tool);
+        let idetails = await getImports(crossChecks, d => d.import_tool == tool);
         copyFiles(crossCheckDir, idetails, repo);
         createDebug("  Copied %d cross-check directories", idetails.length);
     } catch (e) {
@@ -64,7 +64,7 @@ export async function createRepo(vendor: VendorDetails, tool: string, repo: stri
 
 /**
  * Make a repository (if it doesn't already exist) for the given vendor
- * 
+ *
  * @param repo Repository for vendor specific files
  * @param tool Tool being processed
  * @param vendor Vendor being processed
@@ -81,20 +81,20 @@ function makeRepoDir(repo: string, tool: string, vendor: VendorDetails) {
 
 /**
  * Generate a .tool file in the vendor repository for the tool being processed
- * 
+ *
  * @param root Root of SVN files
  * @param repo Repository for vendor specific files
  * @param legacyToolFile Legacy tool file
  * @param vendor Vendor being processed
  */
-function generateToolFile(root: string, repo: string, legacyToolFile: string, vendor: VendorDetails) {
+function generateToolFile(root: string, repo: string, legacyToolFile: string) {
     let fullLegacyToolFileName = path.join(root, "tools", legacyToolFile);
     createDebug("  Looking for legacy tool file at %s", fullLegacyToolFileName);
     if (fs.existsSync(fullLegacyToolFileName)) {
         let dst = path.join(repo, legacyToolFile.replace(".info", ".tool"));
         let legacy = parseLegacyToolFile(fullLegacyToolFileName);
         createDebug("    Legacy tool data: %j", legacy);
-        let next = upgradeToolData(vendor, legacy);
+        let next = upgradeToolData(legacy);
         createDebug("    New .tool file content: %j", next);
         writeToolFile(dst, next);
         createDebug("Translated legacy tool information file from '%s' to '%s'", fullLegacyToolFileName, dst);
@@ -106,11 +106,11 @@ function generateToolFile(root: string, repo: string, legacyToolFile: string, ve
 /**
  * This function copies a collection of files from one place to another providing
  * progress information as it goes.
- * 
+ *
  * @param details A list of files to be moved
  * @param repo Vendor repository to move them to
  */
-function copyFiles(dst: string, details: Array<{ rel: string, dir: string }>, repo: string) {
+function copyFiles(dst: string, details: Array<{ rel: string; dir: string }>, repo: string) {
     details.forEach((match, index) => {
         let from = match.dir;
         let to = path.join(repo, dst, match.rel);

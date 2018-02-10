@@ -1,11 +1,14 @@
-import { Database } from './db';
-import { ToolsTable, FMUTable, CrossCheckTable } from '@modelica/fmi-data';
-import { FileSystemDatabase } from './file';
+import { Database } from "./db";
+import { ToolsTable, FMUTable, CrossCheckTable } from "@modelica/fmi-data";
+import { FileSystemDatabase } from "./file";
 
-import { execSync } from 'child_process';
-import * as path from 'path';
+import { execSync } from "child_process";
+import * as path from "path";
+import * as tmp from "tmp";
 
-import * as debug from 'debug';
+tmp.setGracefulCleanup();
+
+import * as debug from "debug";
 const githubDebug = debug("fmi:github");
 
 const userName = "process_repo script";
@@ -13,24 +16,38 @@ const userEmail = "webmaster@modelica.org";
 
 export class GithubDatabase implements Database {
     private fs: FileSystemDatabase;
-    constructor(protected workDir: string, repo: string, protected branch: string) {
-        let cmd = `git clone ${repo} ${workDir}`;
+    private cleanup: () => void = () => undefined;
+    protected workDir: string;
+    constructor(dir: string | null, repo: string, protected branch: string) {
+        if (dir) {
+            this.workDir = dir;
+        } else {
+            let dir = tmp.dirSync({ unsafeCleanup: true });
+            this.workDir = dir.name;
+            console.warn("Using " + dir.name + " as Git (temporary) working directory");
+            this.cleanup = () => {
+                console.warn("Removing temporary Git working directory");
+                dir.removeCallback();
+            };
+        }
+
+        let cmd = `git clone ${repo} ${this.workDir}`;
         githubDebug("Running command '%s'", cmd);
         execSync(cmd);
 
         cmd = `git checkout ${branch}`;
         githubDebug("Checking out branch '%s' with '%s'", branch, cmd);
-        execSync(cmd, { cwd: workDir });
+        execSync(cmd, { cwd: this.workDir });
 
         cmd = `git config user.name "process_repo script"`;
         githubDebug("Setting user name for commits with '%s'", userName);
-        execSync(cmd, { cwd: workDir });
+        execSync(cmd, { cwd: this.workDir });
 
         cmd = `git config user.email "process_repo script"`;
         githubDebug("Setting user name for commits with '%s'", userEmail);
-        execSync(cmd, { cwd: workDir });
+        execSync(cmd, { cwd: this.workDir });
 
-        this.fs = new FileSystemDatabase(path.join(workDir, "_data"));
+        this.fs = new FileSystemDatabase(path.join(this.workDir, "_data"));
     }
     async open(): Promise<void> {
         await this.fs.open();
@@ -65,26 +82,31 @@ export class GithubDatabase implements Database {
     }
 
     async close(): Promise<void> {
-        await this.fs.close();
+        try {
+            await this.fs.close();
 
-        // TODO: git config stuff
+            let cmd = `git add .`;
+            githubDebug("Adding updated files in Github repo with '%s'", cmd);
+            let output = execSync(cmd, { cwd: this.workDir }).toString();
+            githubDebug("Output from '%s': '%s'", cmd, output);
 
-        let cmd = `git add .`;
-        githubDebug("Adding updated files in Github repo with '%s'", cmd);
-        let output = execSync(cmd, { cwd: this.workDir }).toString();
-        githubDebug("Output from '%s': '%s'", cmd, output);
+            if (output === "") {
+                githubDebug("No changes, nothing to commit or push");
+                console.warn("No changes, nothing to commit or push");
+                return;
+            }
 
-        if (output === "") {
-            githubDebug("No changes, nothing to commit or push");
-            return;
+            cmd = `git commit -m "Updates after processing repository"`;
+            githubDebug("Committing files in Github repo with '%s'", cmd);
+            execSync(cmd, { cwd: this.workDir });
+
+            cmd = `git push origin ${this.branch}`;
+            githubDebug("Pushing files in Github repo with '%s'", cmd);
+            execSync(cmd, { cwd: this.workDir });
+        } catch (e) {
+            throw e;
+        } finally {
+            this.cleanup();
         }
-
-        cmd = `git commit -m "Updates after processing repository"`;
-        githubDebug("Committing files in Github repo with '%s'", cmd);
-        execSync(cmd, { cwd: this.workDir });
-
-        cmd = `git push origin ${this.branch}`;
-        githubDebug("Pushing files in Github repo with '%s'", cmd);
-        execSync(cmd, { cwd: this.workDir });
     }
 }

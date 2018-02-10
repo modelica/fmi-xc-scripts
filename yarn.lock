@@ -2,11 +2,9 @@
 # yarn lockfile v1
 
 
-"@modelica/fmi-data@0.11.1":
-  version "0.11.1"
-  resolved "https://registry.npmjs.org/@modelica/fmi-data/-/fmi-data-0.11.1.tgz#1362473251cb52df5d67bf8a55c2d5d28f0f3a89"
-  dependencies:
-    typescript "^2.6.2"
+"@modelica/fmi-data@0.14.5":
+  version "0.14.5"
+  resolved "https://registry.npmjs.org/@modelica/fmi-data/-/fmi-data-0.14.5.tgz#d5a9b1d3582e426dd5fe883a97a8a583e96eca55"
 
 "@types/axios@^0.14.0":
   version "0.14.0"
@@ -44,6 +42,10 @@
 "@types/node@*", "@types/node@^8.0.46":
   version "8.0.46"
   resolved "https://registry.yarnpkg.com/@types/node/-/node-8.0.46.tgz#6e1766b2d0ed06631d5b5f87bb8e72c8dbb6888e"
+
+"@types/tmp@^0.0.33":
+  version "0.0.33"
+  resolved "https://registry.npmjs.org/@types/tmp/-/tmp-0.0.33.tgz#1073c4bc824754ae3d10cfab88ab0237ba964e4d"
 
 "@types/yargs@^8.0.2":
   version "8.0.2"
@@ -337,6 +339,10 @@ os-locale@^2.0.0:
     lcid "^1.0.0"
     mem "^1.1.0"
 
+os-tmpdir@~1.0.2:
+  version "1.0.2"
+  resolved "https://registry.npmjs.org/os-tmpdir/-/os-tmpdir-1.0.2.tgz#bbe67406c79aa85c5cfec766fe5734555dfa1274"
+
 p-finally@^1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/p-finally/-/p-finally-1.0.0.tgz#3fbcfb15b899a44123b34b6dcc18b724336a2cae"
@@ -489,6 +495,12 @@ supports-color@^4.0.0:
   dependencies:
     has-flag "^2.0.0"
 
+tmp@^0.0.33:
+  version "0.0.33"
+  resolved "https://registry.npmjs.org/tmp/-/tmp-0.0.33.tgz#6d34335889768d21b2bcda0aa277ced3b1bfadf9"
+  dependencies:
+    os-tmpdir "~1.0.2"
+
 ts-node@^3.3.0:
   version "3.3.0"
   resolved "https://registry.yarnpkg.com/ts-node/-/ts-node-3.3.0.tgz#c13c6a3024e30be1180dd53038fc209289d4bf69"
@@ -514,10 +526,6 @@ tsconfig@^6.0.0:
 typescript@^2.5.3:
   version "2.5.3"
   resolved "https://registry.yarnpkg.com/typescript/-/typescript-2.5.3.tgz#df3dcdc38f3beb800d4bc322646b04a3f6ca7f0d"
-
-typescript@^2.6.2:
-  version "2.6.2"
-  resolved "https://registry.npmjs.org/typescript/-/typescript-2.6.2.tgz#3c5b6fd7f6de0914269027f03c0946758f7673a4"
 
 universalify@^0.1.0:
   version "0.1.1"

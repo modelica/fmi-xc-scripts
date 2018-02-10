@@ -1,14 +1,21 @@
-import { findFilesWithSuffix, validate } from './utils';
-import { buildToolSummaryFromToolFile } from '../io';
-import { Reporter, ReportLevel } from './report';
-import { Database } from '../db';
-import { FMUTable, parsePlatform, parseVariant, parseVersion, CrossCheckTable } from '@modelica/fmi-data';
-import { getExports, validateExport } from './exports';
-import { getImports, validateImport, buildCrossCheckTable } from './imports';
-import { exportDir, crossCheckDir } from './defaults';
-import * as debug from 'debug';
-import * as path from 'path';
-import * as fs from 'fs';
+import { findFilesWithSuffix, validate } from "./utils";
+import { buildToolSummaryFromToolFile } from "../io";
+import { Reporter, ReportLevel } from "./report";
+import { Database } from "../db";
+import {
+    FMUTable,
+    parsePlatform,
+    parseVariant,
+    parseVersion,
+    CrossCheckTable,
+    VendorDetails,
+} from "@modelica/fmi-data";
+import { getExports, validateExport } from "./exports";
+import { getImports, validateImport, buildCrossCheckTable } from "./imports";
+import { exportDir, crossCheckDir } from "./defaults";
+import * as debug from "debug";
+import * as path from "path";
+import * as fs from "fs";
 
 const stepsDebug = debug("fmi:steps");
 const dataDebug = debug("fmi:data");
@@ -18,7 +25,7 @@ const dataDebug = debug("fmi:data");
  * extract information from vendor repositories, validate it against existing tools listed
  * in a database, merge the vendor data into the existing data and, finally, push that
  * merged data back into the database.
- *  
+ *
  * @param db Database instance to interact with
  * @param dir Directory to process
  * @param vendorId The id of the vendor we are processing
@@ -26,9 +33,15 @@ const dataDebug = debug("fmi:data");
  * @param imports Whether to include processing of imported FMUs
  * @param report A means to report issues during processing.
  */
-export async function processRepo(db: Database, dir: string, vendorId: string, imports: boolean, report: Reporter) {
+export async function processRepo(
+    db: Database,
+    dir: string,
+    vendor: VendorDetails,
+    imports: boolean,
+    report: Reporter,
+) {
     // Read external tools database
-    stepsDebug("Processing repo in %s owned by %s", dir, vendorId);
+    stepsDebug("Processing repo in %s owned by %s", dir, vendor.vendorId);
     stepsDebug("  Process imports: %j", imports);
     stepsDebug("Loading external tools");
 
@@ -37,13 +50,13 @@ export async function processRepo(db: Database, dir: string, vendorId: string, i
     let tools = findFilesWithSuffix(dir, "tool");
     stepsDebug("Info files found: %j", tools);
 
-    let summaries = tools.map((toolFile) => buildToolSummaryFromToolFile(path.join(dir, toolFile), report));
-    let local = summaries.map((data) => data.id);
+    let summaries = tools.map(toolFile => buildToolSummaryFromToolFile(path.join(dir, toolFile), report, vendor));
+    let local = summaries.map(data => data.id);
     dataDebug("  Summaries: %j", summaries);
     dataDebug("  Local tools: %j", local);
 
     // Update database with tool information
-    await db.updateTools(summaries, vendorId);
+    await db.updateTools(summaries, vendor.vendorId);
 
     // Process exports by searching the exports directory (see `exportDir` constant)
     //   Find all directories of appropriate length
@@ -59,7 +72,7 @@ export async function processRepo(db: Database, dir: string, vendorId: string, i
 
             let fmus: FMUTable = [];
             //   Build FMUTable
-            exports.forEach((ex) => {
+            exports.forEach(ex => {
                 let version = parseVersion(ex.fmi_version);
                 let variant = parseVariant(ex.variant);
                 let platform = parsePlatform(ex.platform);
@@ -77,17 +90,17 @@ export async function processRepo(db: Database, dir: string, vendorId: string, i
                 }
                 fmus.push({
                     name: ex.model,
-                    vendorId: vendorId,
+                    vendorId: vendor.vendorId,
                     version: version,
                     variant: variant,
                     platform: platform,
                     export_tool: ex.export_tool,
                     export_version: ex.export_version,
                 });
-            })
+            });
 
             // Write out: fmus.json (FMUTable)
-            await db.updateFMUs(fmus, vendorId);
+            await db.updateFMUs(fmus, vendor.vendorId);
         }
     } catch (e) {
         report("Error while processing exports in " + dir + ": " + e.message, ReportLevel.Fatal);
@@ -100,13 +113,13 @@ export async function processRepo(db: Database, dir: string, vendorId: string, i
             stepsDebug("Processing cross-check data");
             // Process cross checks
             //   Find all directories of appropriate length
-            let allImports = await getImports(xcdir)
+            let allImports = await getImports(xcdir);
             let imports = validate(allImports, validateImport, report);
             dataDebug("Import directories: %o", imports);
-            let xc: CrossCheckTable = buildCrossCheckTable(imports, vendorId, report);
+            let xc: CrossCheckTable = buildCrossCheckTable(imports, vendor.vendorId, report);
 
             // Write out: xc_results.json (CrossCheckTable)
-            await db.updateCrossChecks(xc, vendorId);
+            await db.updateCrossChecks(xc, vendor.vendorId);
         } catch (e) {
             report("Error while processing imports in " + dir + ": " + e.message, ReportLevel.Fatal);
         }
@@ -115,4 +128,3 @@ export async function processRepo(db: Database, dir: string, vendorId: string, i
         else stepsDebug("No cross check directory named " + xcdir + ", skipping");
     }
 }
-

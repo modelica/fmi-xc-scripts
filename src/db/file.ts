@@ -1,22 +1,47 @@
-import { ToolsTable, ToolSummary, FMUTable, CrossCheckTable, FMUDetails, CrossCheckResult } from '@modelica/fmi-data';
-import { Database } from './db';
-import * as fs from 'fs-extra';
-import * as path from 'path';
+import {
+    ToolsTable,
+    ToolSummary,
+    FMUTable,
+    CrossCheckTable,
+    FMUDetails,
+    CrossCheckResult,
+    VendorDetails,
+} from "@modelica/fmi-data";
+import { Database } from "./db";
+import * as fs from "fs-extra";
+import * as path from "path";
 
-import * as debug from 'debug';
-const fileDebug = debug('fmi:db');
+import * as debug from "debug";
+const fileDebug = debug("fmi:db");
 
-import { xcFile, fmusFile, toolsFile } from './files';
+import { xcFile, fmusFile, toolsFile } from "./files";
 
 function sort<T extends {}>(arr: T[]): void {
     arr.sort((a, b) => {
         let sa = JSON.stringify(a);
         let sb = JSON.stringify(b);
-        return sa > sb ? 1 : (sa < sb ? -1 : 0);
-    })
+        return sa > sb ? 1 : sa < sb ? -1 : 0;
+    });
 }
 
-function merge<T extends { vendorId: string }>(orig: T[], updating: T[], vendorId: string): T[] {
+function mergeDetails<T extends { vendor: VendorDetails }>(orig: T[], updating: T[], vendorId: string): T[] {
+    for (let i = 0; i < updating.length; i++) {
+        let entity = updating[i];
+        if (entity.vendor.vendorId != vendorId) {
+            console.error("Vendor: " + vendorId);
+            console.error("Updates: " + JSON.stringify(updating));
+            console.error("Entity: " + JSON.stringify(entity));
+            throw new Error(
+                `Found entity owned by ${entity.vendor.vendorId} while updating entities for vendor ${vendorId}`,
+            );
+        }
+    }
+    // Strip out all entities associated with this vendor
+    let entities = [...orig].filter(entity => entity.vendor.vendorId != vendorId);
+    return [...entities, ...updating];
+}
+
+function mergeId<T extends { vendorId: string }>(orig: T[], updating: T[], vendorId: string): T[] {
     for (let i = 0; i < updating.length; i++) {
         let entity = updating[i];
         if (entity.vendorId != vendorId) {
@@ -27,7 +52,7 @@ function merge<T extends { vendorId: string }>(orig: T[], updating: T[], vendorI
         }
     }
     // Strip out all entities associated with this vendor
-    let entities = [...orig].filter((entity) => entity.vendorId != vendorId);
+    let entities = [...orig].filter(entity => entity.vendorId != vendorId);
     return [...entities, ...updating];
 }
 
@@ -40,9 +65,7 @@ export class FileSystemDatabase implements Database {
     private tools: ToolSummary[] = [];
     private fmus: FMUDetails[] = [];
     private xc: CrossCheckResult[] = [];
-    constructor(protected artifactsDir: string) {
-
-    }
+    constructor(protected artifactsDir: string) {}
     async open() {
         this.tools = await this.loadTools();
         this.fmus = await this.loadFMUs();
@@ -87,7 +110,7 @@ export class FileSystemDatabase implements Database {
 
     async updateTools(updating: ToolSummary[], vendorId: string): Promise<void> {
         fileDebug("Updating data about %d tools: ", updating.length);
-        this.tools = merge(this.tools, updating, vendorId);
+        this.tools = mergeDetails(this.tools, updating, vendorId);
     }
 
     async updateFMUs(updating: FMUTable, vendorId: string): Promise<void> {
@@ -95,7 +118,7 @@ export class FileSystemDatabase implements Database {
 
         // TODO: Make sure these reference only known tools
 
-        this.fmus = merge(this.fmus, updating, vendorId);
+        this.fmus = mergeId(this.fmus, updating, vendorId);
     }
 
     async updateCrossChecks(updating: CrossCheckTable, vendorId: string): Promise<void> {
@@ -103,7 +126,7 @@ export class FileSystemDatabase implements Database {
 
         // TODO: Make sure these reference only known tools
 
-        this.xc = merge(this.xc, updating, vendorId);
+        this.xc = mergeId(this.xc, updating, vendorId);
     }
 
     async commit() {

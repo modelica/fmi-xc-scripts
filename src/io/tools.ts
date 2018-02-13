@@ -15,6 +15,8 @@ export function parseToolFile(filename: string): { id: string; tool: ToolFile } 
 
     if (!obj.hasOwnProperty("FMI1_0")) obj.FMI1_0 = {};
     if (!obj.hasOwnProperty("FMI2_0")) obj.FMI2_0 = {};
+    if (obj.homepage === "undefined" || obj.homepage === "") obj.homepage = null;
+    if (obj.email === "undefined" || obj.email === "") obj.email = null;
 
     let id = path.basename(filename, ".tool");
 

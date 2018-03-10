@@ -129,6 +129,12 @@ export class FileSystemDatabase implements Database {
         this.xc = mergeId(this.xc, updating, vendorId);
     }
 
+    async removeVendor(id: string): Promise<void> {
+        this.tools = this.tools.filter(tool => tool.vendor.vendorId === id);
+        this.fmus = this.fmus.filter(fmu => fmu.vendorId === id);
+        this.xc = this.xc.filter(xc => xc.vendorId === id);
+    }
+
     async commit() {
         let artifacts = this.artifactsDir;
 

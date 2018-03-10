@@ -49,12 +49,15 @@ async function run() {
     for (let i = 0; i < dirs.length; i++) {
         let dir = dirs[i];
         processDebug("Processing contents of directory: %s", dir);
+        let vendorId: string | null = null;
         try {
             // Load the vendor data for this repository
             let vendor = loadVendorData(dir);
+            vendorId = vendor.vendorId;
             // Process contents and update database
             await processRepo(db, dir, vendor, argv.imports, report.reporter);
         } catch (e) {
+            if (vendorId) db.removeVendor(vendorId);
             console.error("Error while processing directory '" + dir + "', skipping: " + e.message + "\n" + e.stack);
         }
     }

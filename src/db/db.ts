@@ -1,7 +1,7 @@
-import { ToolsTable, FMUTable, CrossCheckTable } from '@modelica/fmi-data';
+import { ToolsTable, FMUTable, CrossCheckTable } from "@modelica/fmi-data";
 
 /**
- * This is the interface for any persistence layer that is being used to store 
+ * This is the interface for any persistence layer that is being used to store
  * FMI export and cross check data.  This abstraction is used by several functions
  * in the 'core' library.
  */
@@ -22,6 +22,11 @@ export interface Database {
      * associated with the specified vendor).
      */
     updateCrossChecks(updates: CrossCheckTable, vendorId: string): Promise<void>;
+    /**
+     * Remove all references to material associated with a given vendor.
+     * @param id Vendor id
+     */
+    removeVendor(id: string): Promise<void>;
     commit(): Promise<void>;
     close(): Promise<void>;
 }

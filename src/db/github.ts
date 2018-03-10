@@ -77,6 +77,15 @@ export class GithubDatabase implements Database {
         await this.fs.updateCrossChecks(updates, vendorId);
     }
 
+    /**
+     * Remove any results associated with the given vendor
+     *
+     * @param id Vendor id
+     */
+    async removeVendor(id: string): Promise<void> {
+        await this.fs.removeVendor(id);
+    }
+
     async commit(): Promise<void> {
         await this.fs.commit();
     }

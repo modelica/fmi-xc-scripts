@@ -1,14 +1,14 @@
-import { Database } from './db';
-import { ToolsTable, FMUTable, CrossCheckTable } from '@modelica/fmi-data';
+import { Database } from "./db";
+import { ToolsTable, FMUTable, CrossCheckTable } from "@modelica/fmi-data";
 
-import * as debug from 'debug';
+import * as debug from "debug";
 const dryrunDebug = debug("fmi:dryrun");
 
 export class DryrunDatabase implements Database {
     async open(): Promise<void> {
         dryrunDebug("Dryrun: opening db");
         return undefined;
-    };
+    }
     /**
      * The tools listed are all the tools associated with specified vendor (and only tools
      * associated with the specified vendor).
@@ -31,6 +31,9 @@ export class DryrunDatabase implements Database {
      */
     async updateCrossChecks(_updates: CrossCheckTable, vendorId: string): Promise<void> {
         dryrunDebug("Dryrun: updating cross checks for %s", vendorId);
+        return undefined;
+    }
+    async removeVendor(_id: string): Promise<void> {
         return undefined;
     }
     async commit(): Promise<void> {

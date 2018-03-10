@@ -7,7 +7,7 @@ import * as fs from "fs";
 import * as debug from "debug";
 const vendorDebug = debug("fmi:io:vendor");
 
-function readProp(obj: any, prop: string, def?: string): string {
+function readProp(obj: any, prop: string, def?: string | null): string {
     if (obj.hasOwnProperty(prop)) return obj[prop] as string;
     if (def == undefined) throw new Error("No property '" + prop + "' found in: " + JSON.stringify(obj));
     return def;
@@ -29,8 +29,8 @@ export function loadVendorData(dir: string): VendorDetails {
     return {
         vendorId: readProp(obj, "vendorId"),
         displayName: readProp(obj, "displayName"),
-        href: readProp(obj, "href") || null,
-        email: readProp(obj, "email") || null,
+        href: readProp(obj, "href", null),
+        email: readProp(obj, "email", null),
         repo: readProp(obj, "repo"),
     };
 }

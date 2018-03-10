@@ -7,9 +7,9 @@ import * as fs from "fs";
 import * as debug from "debug";
 const vendorDebug = debug("fmi:io:vendor");
 
-function readProp(obj: any, prop: string, def?: string | null): string {
+function readProp<T>(obj: any, prop: string, def?: string | T): string | T {
     if (obj.hasOwnProperty(prop)) return obj[prop] as string;
-    if (def == undefined) throw new Error("No property '" + prop + "' found in: " + JSON.stringify(obj));
+    if (def === undefined) throw new Error("No property '" + prop + "' found in: " + JSON.stringify(obj));
     return def;
 }
 
